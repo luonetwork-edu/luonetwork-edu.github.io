@@ -1,0 +1,1971 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0d9488">
+<title>学校留存周转设备-管理工作台</title>
+<style>
+/* ============ 全局变量与基础样式（全部内联，无任何外部依赖） ============ */
+:root{
+  --primary:#0d9488;        /* 主色 蓝绿 */
+  --primary-d:#0f766e;
+  --primary-l:#e8fbf7;
+  --accent:#0891b2;         /* 辅助 青蓝 */
+  --danger:#dc2626;         /* 警告红 */
+  --danger-bg:#fef2f2;
+  --warn:#ea580c;           /* 提醒橙 */
+  --warn-bg:#fff7ed;
+  --ok:#16a34a;
+  --bg:#f5f7f8;             /* 背景浅灰 */
+  --card:#ffffff;
+  --text:#1f2937;
+  --muted:#6b7280;
+  --line:#e6eaec;
+  --radius:12px;
+  --nav-w:216px;
+  --nav-w-sm:62px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--text);font-size:14px;line-height:1.55;
+}
+h1,h2,h3,h4{margin:0;font-weight:600}
+a{color:var(--primary);text-decoration:none}
+
+/* ============ 左侧固定导航 ============ */
+.sidebar{
+  position:fixed;left:0;top:0;bottom:0;width:var(--nav-w);
+  background:#ffffff;border-right:1px solid var(--line);
+  display:flex;flex-direction:column;z-index:40;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.brand{display:flex;align-items:center;gap:10px;padding:16px 14px;border-bottom:1px solid var(--line)}
+.brand .logo{width:34px;height:34px;flex:none;border-radius:9px;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center}
+.brand .tit{font-size:14px;font-weight:700;letter-spacing:.2px}
+.brand .sub{font-size:11px;color:var(--muted)}
+.nav{flex:1;overflow-y:auto;padding:10px 8px}
+.nav-item{
+  display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;
+  color:#374151;font-size:14px;text-align:left;cursor:pointer;
+  padding:11px 10px;border-radius:10px;margin-bottom:4px;min-height:46px;font-family:inherit;
+}
+.nav-item:hover{background:#f1f5f5}
+.nav-item.active{background:var(--primary-l);color:var(--primary-d);font-weight:600}
+.nav-item.active svg{stroke:var(--primary-d)}
+.nav-item svg{width:20px;height:20px;flex:none;stroke:#6b7280;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.nav-badge{margin-left:auto;background:var(--danger);color:#fff;font-size:11px;border-radius:9px;padding:1px 6px;min-width:18px;text-align:center}
+.nav-foot{padding:10px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.nav-foot button{width:100%;border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:9px;padding:9px;font-size:12px;cursor:pointer;font-family:inherit;min-height:40px}
+.nav-foot button:hover{color:var(--danger);border-color:#fecaca}
+/* 左侧日历：借出/出库日期视图 */
+.side-cal{margin:4px 8px 10px;padding:10px 9px 11px;border:1px solid var(--line);border-radius:12px;background:#fbfdfd}
+.side-cal .sc-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.side-cal .sc-title{font-size:13px;font-weight:700;color:var(--ink)}
+.side-cal .sc-nav{display:flex;gap:5px}
+.side-cal .sc-nav button{width:26px;height:26px;border:1px solid var(--line);background:#fff;border-radius:7px;cursor:pointer;color:var(--muted);font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;font-family:inherit}
+.side-cal .sc-nav button:hover{color:var(--primary-d);border-color:var(--primary)}
+.side-cal .sc-wk{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px}
+.side-cal .sc-wk span{font-size:10px;text-align:center;color:var(--muted);padding:2px 0}
+.side-cal .sc-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.side-cal .sc-cell{position:relative;aspect-ratio:1/1;min-height:25px;border:0;background:transparent;border-radius:7px;font-size:12px;color:#374151;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;padding:0}
+.side-cal .sc-cell:hover{background:#eef6f5}
+.side-cal .sc-cell.muted{color:#cbd5e1;cursor:default}
+.side-cal .sc-cell.muted:hover{background:transparent}
+.side-cal .sc-cell.today{background:var(--primary-l);color:var(--primary-d);font-weight:700}
+.side-cal .sc-dots{position:absolute;bottom:2px;left:0;right:0;display:flex;justify-content:center;gap:3px}
+.side-cal .sc-dots i{display:inline-block;width:6px;height:6px;border-radius:50%}
+.side-cal .d-out{background:#dc2626}
+.side-cal .d-bw{background:#f59e0b}
+.side-cal .sc-legend{display:flex;gap:12px;margin-top:8px;font-size:10px;color:var(--muted);align-items:center}
+.side-cal .sc-legend i{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:3px;vertical-align:middle}
+/* 弹窗中日历放大，避免沿用侧边栏小尺寸 */
+.modal-bd .side-cal{margin:0;padding:14px 12px 16px;background:#f9fbfc;border-radius:12px}
+.modal-bd .side-cal .sc-title{font-size:16px}
+.modal-bd .side-cal .sc-wk span{font-size:12px;padding:4px 0}
+.modal-bd .side-cal .sc-cell{font-size:15px;min-height:42px;border-radius:9px}
+.modal-bd .side-cal .sc-dots{bottom:5px;gap:4px}
+.modal-bd .side-cal .sc-dots i{width:8px;height:8px}
+.modal-bd .side-cal .sc-legend{margin-top:14px;font-size:13px;gap:18px}
+.modal-bd .side-cal .sc-legend i{width:10px;height:10px}
+.modal-bd .side-cal .sc-nav button{width:32px;height:32px}
+/* 手机端：弹窗已移除，把左下角小日历移入主区顶部显示，避免手机端看不到日历 */
+.side-cal.cal-mobile{display:none;margin:10px 12px}
+.cal-row{margin:5px 0;font-size:13px;line-height:1.5}
+
+/* ============ 右侧主区 ============ */
+.main{margin-left:var(--nav-w);min-height:100vh;display:flex;flex-direction:column}
+.header{position:relative;overflow:hidden;background:linear-gradient(120deg,#0d9488 0%,#0e7490 100%);color:#fff;padding:18px 20px}
+.header .hd-bg{position:absolute;inset:0;width:100%;height:100%;opacity:.5;pointer-events:none}
+.header .hd-in{position:relative;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.header h1{font-size:18px;letter-spacing:.5px}
+.header p{margin:2px 0 0;font-size:12px;opacity:.85}
+.hd-actions{display:flex;flex-wrap:wrap;gap:8px}
+.btn{
+  border:0;border-radius:10px;padding:9px 14px;font-size:13px;cursor:pointer;font-family:inherit;
+  display:inline-flex;align-items:center;gap:6px;min-height:40px;white-space:nowrap;transition:.15s;
+}
+.btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.btn-ghost{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.35)}
+.btn-ghost:hover{background:rgba(255,255,255,.28)}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:var(--primary-d)}
+.btn-line{background:#fff;color:var(--text);border:1px solid var(--line)}
+.btn-line:hover{border-color:var(--primary);color:var(--primary-d)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-warn{background:var(--warn);color:#fff}
+.btn-sm{padding:6px 10px;font-size:12px;min-height:34px;border-radius:8px}
+
+/* ============ 全局提醒栏 ============ */
+.alerts{padding:12px 20px 0}
+.alert{
+  border-radius:var(--radius);padding:11px 14px;margin-bottom:10px;font-size:13px;
+  display:flex;gap:10px;align-items:flex-start;
+}
+.alert svg{width:18px;height:18px;flex:none;margin-top:1px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.alert-danger{background:var(--danger-bg);border:1px solid #fecaca;color:#991b1b}
+.alert-warn{background:var(--warn-bg);border:1px solid #fed7aa;color:#9a3412}
+.alert-tip{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.alert b{font-weight:700}
+.alert .chip{display:inline-block;background:#fff;border-radius:7px;padding:1px 7px;margin:2px 4px 0 0;font-size:12px;border:1px solid currentColor;opacity:.95}
+.alert .close{margin-left:auto;background:transparent;border:0;color:inherit;cursor:pointer;font-size:18px;line-height:1;padding:0 4px}
+
+/* ============ 内容区 ============ */
+.view{padding:14px 20px 40px;flex:1}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:14px;overflow:hidden}
+.card-hd{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--line)}
+.card-hd h2{font-size:15px;display:flex;align-items:center;gap:8px}
+.card-hd h2::before{content:"";width:4px;height:15px;background:var(--primary);border-radius:2px;display:inline-block}
+.card-bd{padding:14px 16px}
+.muted{color:var(--muted);font-size:12px}
+
+/* 工具条 */
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.toolbar input[type=text],.toolbar select{min-width:150px}
+input,select,textarea{
+  font-family:inherit;font-size:16px;/* 16px 防止 iOS 自动缩放 */
+  padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--text);
+  width:100%;min-height:42px;
+}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--primary-l);border-color:var(--primary)}
+textarea{min-height:70px;resize:vertical}
+label.fl{display:block;font-size:12px;color:var(--muted);margin:0 0 4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.grid-2{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+
+/* 表格：PC 表格 / 手机卡片 */
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:#f8fafa;color:var(--muted);font-weight:600;text-align:left;padding:10px 10px;border-bottom:1px solid var(--line);white-space:nowrap;font-size:12px}
+tbody td{padding:10px;border-bottom:1px solid #f0f3f4;vertical-align:middle}
+tbody tr:hover{background:#fafcfc}
+tr.row-danger{background:var(--danger-bg)}
+tr.row-danger:hover{background:#fde8e8}
+tr.row-warn{background:var(--warn-bg)}
+tr.row-warn:hover{background:#ffedd5}
+.cellsub{font-size:11px;color:var(--muted);display:block}
+.acts{display:flex;flex-wrap:wrap;gap:6px}
+
+/* 徽章 */
+.tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;line-height:18px;white-space:nowrap}
+.tag-gray{background:#f1f5f5;color:#4b5563}
+.tag-teal{background:var(--primary-l);color:var(--primary-d)}
+.tag-red{background:#fee2e2;color:#b91c1c}
+.tag-orange{background:#ffedd5;color:#9a3412}
+.tag-green{background:#dcfce7;color:#15803d}
+.tag-blue{background:#e0f2fe;color:#0369a1}
+.tag-dark{background:#334155;color:#fff}
+.tag-scrap{background:#ede9fe;color:#6d28d9}
+.qty{display:inline-flex;gap:4px;flex-wrap:wrap}
+
+/* 指标卡片 */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:14px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+.kpi .k-t{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.kpi .k-v{font-size:28px;font-weight:700;margin-top:6px;line-height:1.1}
+.kpi .k-u{font-size:12px;font-weight:400;color:var(--muted);margin-left:3px}
+.kpi.k-red .k-v{color:var(--danger)}
+.kpi.k-orange .k-v{color:var(--warn)}
+.kpi.k-teal .k-v{color:var(--primary-d)}
+.kpi.k-gray .k-v{color:#475569}
+.kpi.k-dark .k-v{color:#334155}
+.kpi.k-scrap .k-v{color:#6d28d9}
+
+/* 图表 */
+.chart-wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.legend{display:flex;flex-direction:column;gap:6px;font-size:12px;min-width:130px}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:6px}
+.pie-box{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.bar-row{margin-bottom:10px}
+.bar-top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
+.bar-bg{height:14px;background:#f1f5f5;border-radius:7px;overflow:hidden}
+.bar-fill{height:100%;border-radius:7px;background:linear-gradient(90deg,var(--primary),var(--accent));transition:width .4s}
+
+/* 分组 */
+.group-tit{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--primary-d);background:var(--primary-l);padding:8px 12px;border-radius:9px;margin:14px 0 8px}
+.group-tit:first-child{margin-top:0}
+
+/* 弹窗 */
+.mask{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:80;display:flex;align-items:center;justify-content:center;padding:14px}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:720px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden}
+.modal.narrow{max-width:420px}
+.modal-hd{padding:14px 16px;border-bottom:1px solid var(--line);font-weight:600;display:flex;align-items:center;justify-content:space-between}
+.modal-hd button{background:transparent;border:0;font-size:22px;line-height:1;cursor:pointer;color:var(--muted);padding:0 4px}
+.modal-bd{padding:16px;overflow-y:auto;flex:1}
+.modal-ft{padding:12px 16px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+
+/* toast */
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:28px;background:#111827;color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;z-index:99;opacity:0;transition:.25s;pointer-events:none;max-width:88vw;text-align:center}
+.toast.show{opacity:.95;bottom:38px}
+
+.empty{text-align:center;color:var(--muted);padding:36px 10px;font-size:13px}
+.empty svg{width:40px;height:40px;stroke:#cbd5e1;fill:none;stroke-width:1.5;display:block;margin:0 auto 8px}
+
+/* ============ 台账总览：左侧列表 + 右侧设备资产登记 ============ */
+.ledger-wrap{display:flex;gap:14px;align-items:flex-start;margin-top:14px}
+.ledger-main{flex:1;min-width:0}
+.ledger-side{width:340px;flex:none;position:sticky;top:14px}
+.reg-tip{font-size:12px;color:var(--primary-d);background:var(--primary-l);border-radius:9px;padding:9px 11px;margin-bottom:12px;line-height:1.6}
+.reg-stat{display:flex;gap:10px;margin:0 0 12px;flex-wrap:wrap}
+.reg-stat .s{flex:1;min-width:92px;text-align:center;border:1px solid var(--line);border-radius:10px;padding:8px 6px;background:#fff}
+.reg-stat .s b{display:block;font-size:22px;color:var(--primary-d);line-height:1.2}
+.reg-stat .s span{font-size:11px;color:var(--muted)}
+.reg-form .grid-2{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.reg-actions{display:flex;flex-direction:column;gap:9px}
+@media (max-width:1100px){
+  .ledger-wrap{flex-direction:column}
+  .ledger-side{width:100%;position:static;order:-1}
+}
+
+/* ============ 响应式：手机端导航收缩为图标，按钮加大 ============ */
+@media (max-width:900px){
+  .sidebar{width:var(--nav-w-sm)}
+  .main{margin-left:var(--nav-w-sm)}
+  .side-cal{display:none}
+  .main .cal-mobile{display:block!important}
+  .cal-mobile .sc-nav{width:100%;justify-content:space-between;margin:8px 0 2px}
+  .cal-mobile .sc-nav button{width:auto;min-width:118px;height:44px;font-size:19px;padding:0 16px}
+  .cal-mobile .sc-cell{font-size:14px;min-height:38px}
+  .cal-mobile .sc-legend{font-size:12px;gap:16px}
+  .nav-label,.brand .txt,.nav-foot .t{display:none}
+  .brand{justify-content:center;padding:14px 6px}
+  .nav-item{justify-content:center;padding:12px 6px;min-height:52px}
+  .nav-item svg{width:23px;height:23px}
+  .nav-badge{position:absolute;margin:0;transform:translate(14px,-14px)}
+  .nav-item{position:relative}
+  .nav-foot button{font-size:11px;padding:8px 2px}
+}
+@media (max-width:760px){
+  .view{padding:12px 12px 44px}
+  .alerts{padding:10px 12px 0}
+  .header{padding:14px 12px}
+  .btn{padding:11px 14px;font-size:14px;min-height:46px}   /* 手机端按钮加大 */
+  .btn-sm{padding:9px 12px;font-size:13px;min-height:42px}
+  .hd-actions{width:100%}
+  .hd-actions .btn{flex:1;justify-content:center}
+  .kpi .k-v{font-size:24px}
+  /* 表格转卡片 */
+  table,thead,tbody,tr,td{display:block;width:100%}
+  thead{display:none}
+  tbody tr{border:1px solid var(--line);border-radius:11px;margin-bottom:10px;padding:6px 4px;background:#fff}
+  tbody tr.row-danger{background:var(--danger-bg)}
+  tbody tr.row-warn{background:var(--warn-bg)}
+  tbody td{border:0;padding:7px 12px;display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+  tbody td::before{content:attr(data-label);color:var(--muted);font-size:12px;flex:none;min-width:74px}
+  tbody td>*{text-align:right}
+  .acts{justify-content:flex-end}
+}
+@media print{.sidebar,.hd-actions{display:none}.main{margin:0}}
+</style>
+<script>
+(function(){
+  try{
+    var beacon=new BeaconAction({
+      appkey:'0WEB06U85YBSLJNL',
+      versionCode:'1.0.0',
+      channelID:'share',
+      delay:1000,
+      sessionDuration:30*60*1000,
+      isOversea:false,
+      needReportRqdEvent:false
+    });
+    beacon.onDirectUserAction('preview_page_view',{
+      'url':location.href,
+      'referrer':document.referrer,
+      'title':document.title,
+      'sandbox_id':'1ba53b2b966545b7b78bb3993cbd284f'
+    });
+  }catch(e){}
+})();
+</script></head>
+<body>
+
+<!-- ============ 左侧导航 ============ -->
+<aside class="sidebar">
+  <div class="brand">
+    <span class="logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="3" width="20" height="13" rx="2"></rect><path d="M8 21h8M12 16v5"></path>
+      </svg>
+    </span>
+    <span class="txt">
+      <span class="tit">学校留存周转设备</span><br>
+      <span class="sub">School IT Asset</span>
+    </span>
+  </div>
+  <nav class="nav" id="nav"></nav>
+  <div class="side-cal" id="sideCal"></div>
+  <div class="nav-foot">
+    <button type="button" data-act="wipeAll" title="清空全部数据">
+      <span class="t">清空全部数据</span><span style="display:none">清空</span>
+    </button>
+  </div>
+</aside>
+
+<!-- ============ 右侧主区 ============ -->
+<div class="main">
+  <header class="header">
+    <!-- 克制简约的页头 SVG 背景 -->
+    <svg class="hd-bg" viewBox="0 0 1200 160" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="hg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.18"/>
+          <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <rect width="1200" height="160" fill="url(#hg)"/>
+      <g stroke="#ffffff" stroke-opacity="0.18" fill="none" stroke-width="1">
+        <path d="M0 130 Q 300 60 600 110 T 1200 70"/>
+        <path d="M0 150 Q 320 90 640 130 T 1200 100"/>
+        <circle cx="1060" cy="46" r="42"/>
+        <circle cx="1060" cy="46" r="66"/>
+      </g>
+      <g fill="#ffffff" fill-opacity="0.1">
+        <rect x="900" y="104" width="42" height="6" rx="3"/>
+        <rect x="950" y="104" width="18" height="6" rx="3"/>
+      </g>
+    </svg>
+    <div class="hd-in">
+      <div>
+        <h1 id="pageTitle">设备台账总览</h1>
+        <p id="pageDesc">学校留存周转设备统一登记与管理</p>
+      </div>
+      <div class="hd-actions">
+        <button class="btn btn-ghost" data-act="export">
+          <svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>导出备份
+        </button>
+        <button class="btn btn-ghost" data-act="import">
+          <svg viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M4 21h16"/></svg>导入数据文件
+        </button>
+        <button class="btn btn-ghost" data-act="exportCsv" title="导出为 Excel 可直接打开的 CSV（设备/流水/工单三个文件）">
+          <svg viewBox="0 0 24 24"><path d="M5 3h9l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM14 3v5h5M8 13h8M8 17h6"/></svg>导出Excel
+        </button>
+        <button class="btn btn-ghost" data-act="importCsv" title="从 Excel 导出的 CSV 文件导入（自动识别类型并追加）">
+          <svg viewBox="0 0 24 24"><path d="M5 3h9l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM14 3v5h5M12 18v-6M9 15l3 3 3-3"/></svg>导入Excel
+        </button>
+        <!-- 工作台默认无示例数据，"清空示例数据"按钮已移除 -->
+        <button class="btn btn-ghost" data-act="imaBackup" title="备份到 IMA 知识库（由小台代存，无需服务器）">
+          <svg viewBox="0 0 24 24"><path d="M12 16V4M8 8l4-4 4 4M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>备份到IMA
+        </button>
+        <button class="btn btn-ghost" data-act="snaps" title="本地自动快照，误删/误改后可恢复（仅本浏览器）">
+          <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v4h4M12 8v4l3 2"/></svg>本地快照
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 手机端日历：窄屏显示于主区顶部，带放大的月份切换按钮 -->
+  <div class="side-cal cal-mobile" id="mobCal"></div>
+
+  <!-- 全局提醒栏：所有页面可见 -->
+  <div class="alerts" id="alerts"></div>
+
+  <!-- 主内容工作区 -->
+  <div class="view" id="view"></div>
+</div>
+
+<div id="modalHost"></div>
+<div class="toast" id="toast"></div>
+<input type="file" id="fileInput" accept=".json,.txt,application/json,text/plain" style="display:none">
+<input type="file" id="csvInput" accept=".csv,text/csv" style="display:none">
+<input type="file" id="csvDeviceInput" accept=".csv,text/csv" style="display:none">
+
+<script>
+/* =========================================================================
+   学校留存周转设备管理工作台 —— 全部逻辑内联，无任何外部依赖，断网可用
+   数据存储：localStorage(key = wb_school_it_v1)
+   ========================================================================= */
+'use strict';
+
+var LS_KEY = 'wb_school_it_v1';
+var BACKUP_TIP_STEP = 20;   // 数据每累计 20 条提醒一次导出备份
+var WARRANTY_DAYS = 60;     // 距质保到期 60 天内视为"即将过保"
+var ADMIN_PWD = 'ws012736';    // 管理密码：删除出入库/借用流水需此密码
+
+/* 下拉选项常量 */
+var CATS = ['智慧教室设备','机房电脑','办公电脑','笔记本电脑','服务器','录播设备','投影','交互大屏','网络交换机','摄像头','便携摄像机','打印机','音响功放','电子班牌','其他'];
+var LOCS = ['教学楼4-13教室','教学楼4-15教室','教学楼4-17教室','教学楼4-19教室'];
+var REPAIR_STATUS = ['待处理','维修中','已修复','报废'];
+var STATUS_DEV = ['在用','闲置','故障','已损坏','已出库','报废'];
+function statusDevTag(s){
+  var m={'在用':'tag-teal','闲置':'tag-blue','故障':'tag-red','已损坏':'tag-dark','已出库':'tag-gray','报废':'tag-scrap'};
+  return '<span class="tag '+(m[s]||'tag-gray')+'">'+esc(s||'未设')+'</span>';
+}
+function cntStatus(s){ return DB.devices.filter(function(d){ return d.status===s; }).length; }
+function inStock(){ return DB.devices.filter(function(d){ return d.status!=='已出库' && d.status!=='报废'; }).length; }
+
+/* 运行期状态 */
+var DB = null;
+var PAGE = 'ledger';
+var UI = { kw:'', cat:'', loc:'', group:false, flowType:'in', repairFilter:'', borrowFilter:'' };
+
+/* ---------------- 基础工具 ---------------- */
+function $(id){ return document.getElementById(id); }
+function uid(p){ return (p||'id') + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function esc(s){
+  if(s===null||s===undefined) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function today(){ var d=new Date(); return fmtDate(d); }
+function fmtDate(d){
+  var m=d.getMonth()+1, day=d.getDate();
+  return d.getFullYear()+'-'+(m<10?'0':'')+m+'-'+(day<10?'0':'')+day;
+}
+function nowStr(){
+  var d=new Date(), h=d.getHours(), mi=d.getMinutes();
+  return fmtDate(d)+' '+(h<10?'0':'')+h+':'+(mi<10?'0':'')+mi;
+}
+function daysTo(dateStr){ // 距今还有多少天（负数=已过期）
+  if(!dateStr) return null;
+  var t = new Date(dateStr+'T00:00:00').getTime();
+  if(isNaN(t)) return null;
+  var n = new Date(today()+'T00:00:00').getTime();
+  return Math.round((t-n)/86400000);
+}
+function toast(msg){
+  var t=$('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._tm); t._tm=setTimeout(function(){ t.classList.remove('show'); },2200);
+}
+function addDays(n){ var d=new Date(); d.setDate(d.getDate()+n); return fmtDate(d); }
+
+/* ---------------- 存储 ---------------- */
+function save(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(DB)); pushSnapshot(); }
+  catch(e){ toast('保存失败：浏览器存储空间可能已满，请先导出备份'); }
+}
+function totalCount(){ return DB.devices.length + DB.flows.length + DB.repairs.length + DB.borrows.length; }
+/* ---------------- 本地自动快照（防误删/误改，仅本浏览器） ---------------- */
+var LS_SNAP = 'wb_device_snapshots';
+var SNAP_MAX = 5;
+var _lastSnapSig = '';
+function snapSig(){
+  var len = 0; try{ len = JSON.stringify(DB).length; }catch(e){ len = 0; }
+  return DB.devices.length+'|'+DB.flows.length+'|'+DB.repairs.length+'|'+DB.borrows.length+'|'+len;
+}
+function pushSnapshot(){
+  try{
+    if(totalCount()===0) return;                 // 空数据不浪费快照
+    var sig = snapSig();
+    if(sig === _lastSnapSig) return;             // 数据未变化，避免重复快照
+    var arr = [];
+    try{ arr = JSON.parse(localStorage.getItem(LS_SNAP)||'[]'); }catch(e){ arr = []; }
+    if(!Array.isArray(arr)) arr = [];
+    if(arr.length && arr[arr.length-1].sig === sig){ _lastSnapSig = sig; return; }
+    arr.push({ ts: nowStr(), sig: sig, data: JSON.parse(JSON.stringify(DB)) });
+    if(arr.length > SNAP_MAX) arr = arr.slice(arr.length - SNAP_MAX);
+    localStorage.setItem(LS_SNAP, JSON.stringify(arr));
+    _lastSnapSig = sig;
+  }catch(e){ /* 快照写入失败不影响主保存 */ }
+}
+function loadSnapshots(){ try{ var a=JSON.parse(localStorage.getItem(LS_SNAP)||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+function restoreSnapshot(i){
+  var arr = loadSnapshots(); var s = arr[i]; if(!s) return;
+  DB = { devices:s.data.devices||[], flows:s.data.flows||[], repairs:s.data.repairs||[], borrows:s.data.borrows||[], meta:s.data.meta||{} };
+  _lastSnapSig=''; save(); render(); toast('已从 '+s.ts+' 的快照恢复');
+}
+function deleteSnapshot(i){ var arr=loadSnapshots(); arr.splice(i,1); localStorage.setItem(LS_SNAP, JSON.stringify(arr)); openSnaps(); }
+function clearSnapshots(){ localStorage.removeItem(LS_SNAP); _lastSnapSig=''; openSnaps(); }
+function openSnaps(){
+  var arr = loadSnapshots();
+  var html = '<div style="line-height:1.6">'
+    + '<p class="muted" style="margin:0 0 10px">系统每次保存会自动留存最近 <b>'+SNAP_MAX+'</b> 份快照（仅本浏览器），用于误删/误改后恢复。快照<b>不会</b>随「清空全部数据」被删，是本地的第二层保险。</p>';
+  if(!arr.length){ html += '<p style="margin:8px 0">暂无快照，录入或改动数据后会自动生成。</p>'; }
+  else {
+    html += '<div style="max-height:60vh;overflow:auto">';
+    for(var i=arr.length-1;i>=0;i--){
+      var s=arr[i]; var d=s.data||{};
+      var cnt=((d.devices||[]).length+(d.flows||[]).length+(d.repairs||[]).length+(d.borrows||[]).length);
+      html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)">'
+        + '<div style="flex:1;min-width:0"><b>'+esc(s.ts)+'</b><br><span class="muted" style="font-size:12px">共 '+cnt+' 条数据</span></div>'
+        + '<button class="btn btn-line btn-sm" data-act="snapRestore" data-i="'+i+'">恢复</button>'
+        + '<button class="btn btn-ghost btn-sm" data-act="snapDel" data-i="'+i+'">删除</button>'
+        + '</div>';
+    }
+    html += '</div><div style="margin-top:12px"><button class="btn btn-ghost btn-sm" data-act="snapClear">清空所有快照</button></div>';
+  }
+  html += '</div>';
+  openModal({ title:'本地快照恢复', okText:'关闭', body:html });
+}
+function load(){
+  var raw = null;
+  try{ raw = localStorage.getItem(LS_KEY); }catch(e){}
+  if(raw){
+    try{
+      DB = JSON.parse(raw);
+      DB.devices = DB.devices || []; DB.flows = DB.flows || []; DB.repairs = DB.repairs || []; DB.borrows = DB.borrows || [];
+      DB.meta = DB.meta || {};
+      migrate();
+      return;
+    }catch(e){ /* 数据损坏则重建 */ }
+  }
+  DB = seed();
+  save();
+}
+function migrate(){
+  DB.devices.forEach(function(d){
+    if(d.status===undefined || d.status===null || d.status==='') d.status='在用';
+    if(d.machineNo===undefined) d.machineNo='';
+    if(d.serial===undefined) d.serial='';
+    if(d.manager===undefined) d.manager='';
+    if(d.dept===undefined) d.dept='';
+  });
+  DB.flows.forEach(function(f){
+    if(f.devCode===undefined) f.devCode='';
+    if(f.devName===undefined) f.devName='';
+  });
+  DB.borrows.forEach(function(b){
+    if(b.inDate===undefined) b.inDate='';
+    if(b.dept===undefined) b.dept='';
+    if(b.purpose===undefined) b.purpose='';
+    if(b.remark===undefined) b.remark='';
+  });
+}
+
+/* ---------------- 预置示例数据（seed:true 的可被"清空示例数据"一键清除） ---------------- */
+function seed(){
+  // 已按需清空示例数据：全新打开即为空白工作台，可直接录入真实设备/流水/工单/借用数据
+  return { devices:[], flows:[], repairs:[], borrows:[], meta:{ createdAt:nowStr(), tipAt:0 } };
+}
+
+/* ---------------- 业务计算 ---------------- */
+function devById(id){
+  for(var i=0;i<DB.devices.length;i++){ if(DB.devices[i].id===id) return DB.devices[i]; }
+  return null;
+}
+function devLabel(id){
+  var d=devById(id);
+  return d ? (d.code+' '+d.name) : '（设备已删除）';
+}
+function warnDevices(){   // 仅统计「距质保到期 60 天内且未过保」的设备（已过保不再提醒）
+  return DB.devices.filter(function(d){
+    var n=daysTo(d.warranty); return n!==null && n>=0 && n<=WARRANTY_DAYS;
+  });
+}
+function brokenDevices(){ return DB.devices.filter(function(d){ return d.status==='故障'; }); }
+function pendingRepairs(){ return DB.repairs.filter(function(r){ return r.status==='待处理'||r.status==='维修中'; }); }
+function sum(arr,key){ var s=0; for(var i=0;i<arr.length;i++) s+=(+arr[i][key]||0); return s; }
+function borrowStatus(b){ if(b.inDate) return '已归还'; if(b.expectDate && daysTo(b.expectDate)<0) return '逾期'; return '借出中'; }
+function pendingBorrows(){ return DB.borrows.filter(function(b){ return borrowStatus(b)!=='已归还'; }); }
+function overdueBorrows(){ return DB.borrows.filter(function(b){ return borrowStatus(b)==='逾期'; }); }
+
+/* ---------------- 图标（全部内联 SVG，不使用 emoji） ---------------- */
+var ICON = {
+  ledger:'<svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"></path><path d="M4 9h16M9 9v11"></path></svg>',
+  flow:'<svg viewBox="0 0 24 24"><path d="M3 7h13l-3-3M21 17H8l3 3"></path></svg>',
+  repair:'<svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0 5 5l-8.4 8.4a2.1 2.1 0 0 1-3-3z"></path><path d="M14.7 6.3 17 4"></path></svg>',
+  dash:'<svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg>',
+  warn:'<svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>',
+  bell:'<svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.7 21a2 2 0 0 1-3.4 0"></path></svg>',
+  empty:'<svg viewBox="0 0 24 24"><path d="M3 7h18v13H3z"></path><path d="M3 7l3-4h12l3 4"></path></svg>',
+  borrow:'<svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="4"></circle><path d="M11 11l9 9M16 16l3-3M16 20l3 1-1-3"></path></svg>'
+};
+var PAGES = [
+  {k:'ledger', t:'设备台账总览', d:'学校留存周转设备统一登记与管理', i:ICON.ledger},
+  {k:'flow',   t:'设备入库/出库登记', d:'入库、领用出库与归还流水，历史记录只增不删', i:ICON.flow},
+  {k:'borrow', t:'设备借用登记', d:'设备借出/归还登记与逾期提醒，借用台账独立清晰', i:ICON.borrow},
+  {k:'repair', t:'维修报修跟进', d:'故障报修工单登记、状态流转与维修台账', i:ICON.repair},
+  {k:'dash',   t:'统计分析看板', d:'设备结构、位置分布与工单状态一屏掌握', i:ICON.dash}
+];
+
+/* ---------------- 导航渲染 ---------------- */
+function renderNav(){
+  var pend = pendingRepairs().length;
+  var ov = overdueBorrows().length;
+  var html = PAGES.map(function(p){
+    var badge = '';
+    if(p.k==='repair' && pend>0) badge = '<span class="nav-badge">'+pend+'</span>';
+    else if(p.k==='borrow' && ov>0) badge = '<span class="nav-badge">'+ov+'</span>';
+    return '<button type="button" class="nav-item'+(PAGE===p.k?' active':'')+'" data-act="go" data-page="'+p.k+'" title="'+p.t+'">'
+         + p.i + '<span class="nav-label">'+p.t+'</span>' + badge + '</button>';
+  }).join('');
+  $('nav').innerHTML = html;
+  var cur = PAGES.filter(function(p){return p.k===PAGE;})[0];
+  $('pageTitle').textContent = cur.t;
+  $('pageDesc').textContent = cur.d;
+}
+
+/* ---------------- 全局提醒栏（所有页面可见） ---------------- */
+function renderAlerts(){
+  var out = '';
+  var wd = warnDevices();
+  var bd = brokenDevices();
+  var pr = pendingRepairs();
+  var ov = overdueBorrows();
+
+  if(bd.length || pr.length){
+    var chips = bd.map(function(d){
+      return '<span class="chip">'+esc(d.code)+' '+esc(d.name)+'（状态：故障·'+esc(d.loc)+'）</span>';
+    }).join('');
+    var rchips = pr.map(function(r){
+      return '<span class="chip">'+esc(devLabel(r.devId))+'｜'+esc(r.status)+'</span>';
+    }).join('');
+    out += '<div class="alert alert-danger">'+ICON.warn+'<div><b>故障待维修提醒：</b>当前 '+bd.length+' 台设备处于故障状态，'+pr.length+' 张工单未闭环。<br>'
+        + chips + rchips + '</div></div>';
+  }
+  if(wd.length){
+    var wchips = wd.map(function(d){
+      var n = daysTo(d.warranty);
+      var txt = '还剩'+n+'天';
+      return '<span class="chip">'+esc(d.code)+' '+esc(d.name)+'（'+esc(d.warranty)+'·'+txt+'）</span>';
+    }).join('');
+    out += '<div class="alert alert-warn">'+ICON.bell+'<div><b>质保到期提醒：</b>'+wd.length+' 项设备将在 '+WARRANTY_DAYS+' 天内过保，请提前安排续保/采购。<br>'
+        + wchips + '</div></div>';
+  }
+  if(ov.length){
+    var ochips = ov.map(function(b){
+      return '<span class="chip">'+esc(b.person)+'｜'+esc(devLabel(b.devId))+'（应还 '+esc(b.expectDate)+'）</span>';
+    }).join('');
+    out += '<div class="alert alert-warn">'+ICON.bell+'<div><b>设备借用逾期提醒：</b>'+ov.length+' 笔借用已超过预计归还日期，请及时催收。<br>'+ochips+'</div></div>';
+  }
+  if(!bd.length && !pr.length && !wd.length && !ov.length){
+    out += '<div class="alert" style="background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46">'+ICON.bell+'<div>当前无故障设备、无未闭环工单、无临期质保设备、无逾期借用，一切正常。</div></div>';
+  }
+
+  // 数据量备份提醒
+  var cnt = totalCount();
+  var step = Math.floor(cnt / BACKUP_TIP_STEP);
+  if(step >= 1 && !DB.meta.tipHidden){
+    out += '<div class="alert alert-tip" id="tipBar">'+ICON.warn+'<div><b>数据已累计 '+cnt+' 条</b>，建议点击右上角「导出备份」保存一份 JSON，避免清理浏览器时丢失。</div>'
+        + '<button class="close" data-act="hideTip" title="今天不再提示">&times;</button></div>';
+    if(step > (DB.meta.tipAt||0)){   // 每满 20 条主动弹一次
+      DB.meta.tipAt = step; save();
+      setTimeout(function(){ toast('数据已累计 '+cnt+' 条，建议导出一次备份'); }, 600);
+    }
+  }
+  $('alerts').innerHTML = out;
+}
+
+/* ---------------- 主渲染 ---------------- */
+function render(){
+  renderNav();
+  renderSideCalendar();
+  renderAlerts();
+  if(PAGE==='ledger') renderLedger();
+  else if(PAGE==='flow') renderFlow();
+  else if(PAGE==='borrow') renderBorrow();
+  else if(PAGE==='repair') renderRepair();
+  else renderDash();
+  window.scrollTo(0,0);
+}
+
+/* ======================= 左侧日历：借出/出库日期视图 ======================= */
+var calView = {y:0, m:0};
+function calEnsure(){ if(!calView.y){ var d=new Date(); calView.y=d.getFullYear(); calView.m=d.getMonth(); } }
+function calMaps(){
+  var out={}, bw={};
+  (DB.flows||[]).forEach(function(f){ if(f.type!=='out') return; var d=(f.time||'').slice(0,10); if(d) out[d]=(out[d]||0)+1; });
+  (DB.borrows||[]).forEach(function(b){ var d=(b.outDate||'').slice(0,10); if(d) bw[d]=(bw[d]||0)+1; });
+  return {out:out, bw:bw};
+}
+function calCell(d, inMonth, maps){
+  var ds = fmtDate(d);
+  var hasOut = maps.out[ds], hasBw = maps.bw[ds];
+  var cls = 'sc-cell' + (inMonth?'':' muted') + (ds===today()?' today':'');
+  var dots = (hasOut||hasBw) ? '<span class="sc-dots">'+(hasOut?'<i class="d-out"></i>':'')+(hasBw?'<i class="d-bw"></i>':'')+'</span>' : '';
+  var act = (hasOut||hasBw) ? ' data-act="calDay" data-date="'+ds+'"' : '';
+  return '<button type="button" class="'+cls+'"'+act+'>'+d.getDate()+dots+'</button>';
+}
+function calMonthBlock(y,m,maps){
+  var first=new Date(y,m,1), lead=(first.getDay()+6)%7, start=new Date(y,m,1-lead), cells='';
+  for(var i=0;i<42;i++){ var d=new Date(start.getFullYear(),start.getMonth(),start.getDate()+i); cells+=calCell(d, d.getMonth()===m, maps); }
+  var wk=['一','二','三','四','五','六','日'].map(function(w){return '<span>'+w+'</span>';}).join('');
+  return '<div class="sc-wk">'+wk+'</div><div class="sc-grid">'+cells+'</div>';
+}
+function renderCalendarInto(box){
+  calEnsure();
+  var maps = calMaps(), y=calView.y, m=calView.m;
+  box.innerHTML='<div class="sc-hd"><span class="sc-title">'+y+'年'+(m+1)+'月</span>'
+    +'<span class="sc-nav"><button type="button" data-act="calPrev" aria-label="上个月">‹</button>'
+    +'<button type="button" data-act="calNext" aria-label="下个月">›</button></span></div>'
+    + calMonthBlock(y,m,maps)
+    +'<div class="sc-legend"><span><i class="d-out"></i>出库（红）</span><span><i class="d-bw"></i>借出（橙）</span></div>';
+}
+function renderCalendars(){ ['sideCal','mobCal'].forEach(function(id){ var b=$(id); if(b) renderCalendarInto(b); }); }
+function calRefresh(){ renderCalendars(); }
+function renderSideCalendar(){ renderCalendars(); }
+/* 手机端日历改用纯 CSS 双渲染：侧栏 #sideCal 与 主区 #mobCal 媒体查询控制显隐，不再 DOM 移动 */
+function calDayDetail(ds){
+  var outs=(DB.flows||[]).filter(function(f){return f.type==='out' && (f.time||'').slice(0,10)===ds;});
+  var bws=(DB.borrows||[]).filter(function(b){return b.outDate===ds;});
+  var dm={}; (DB.devices||[]).forEach(function(d){dm[d.id]=d;});
+  var html='<div style="font-size:14px;line-height:1.7"><h3 style="margin:0 0 8px">'+ds+'</h3>';
+  if(!outs.length && !bws.length){ html+='<div class="muted">当日无借出/出库记录</div>'; }
+  if(outs.length){
+    html+='<div style="margin-bottom:10px"><b style="color:#dc2626">出库（借领用）'+outs.length+' 笔</b>';
+    outs.forEach(function(f){ var d=dm[f.devId]||{}; html+='<div class="cal-row"><span class="tag tag-blue">出库</span> '+(f.time?f.time.slice(11):'')+' · '+(d.name||'未知设备')+'（'+(d.code||'-')+'） · '+esc(f.qty||1)+' 台 · '+esc(f.person||'-')+' / '+esc(f.dept||'-')+'</div>'; });
+    html+='</div>';
+  }
+  if(bws.length){
+    html+='<div><b style="color:#f59e0b">借出（设备借用）'+bws.length+' 笔</b>';
+    bws.forEach(function(b){ var d=dm[b.devId]||{}; html+='<div class="cal-row"><span class="tag tag-orange">借出</span> '+(d.name||'未知设备')+'（'+(d.code||'-')+'） · '+esc(b.person||'-')+' / '+esc(b.dept||'-')+' · 预计还 '+esc(b.expectDate||'-')+' · '+borrowStatus(b)+'</div>'; });
+    html+='</div>';
+  }
+  html+='</div>';
+  openModal({ title:ds+' 借出/出库明细', narrow:false, okText:'关闭', body:html });
+}
+
+/* ======================= 模块1：设备台账总览 ======================= */
+function devRowClass(d){
+  if(d.status==='故障') return 'row-danger';
+  var n=daysTo(d.warranty);
+  if(n!==null && n>=0 && n<=WARRANTY_DAYS) return 'row-warn';
+  return '';
+}
+function warrantyCell(d){
+  var n=daysTo(d.warranty);
+  if(n===null) return '<span class="muted">未填写</span>';
+  if(n<0) return esc(d.warranty)+' <span class="muted">已过保</span>';
+  if(n<=WARRANTY_DAYS) return '<span class="tag tag-orange">'+esc(d.warranty)+' 剩'+n+'天</span>';
+  return esc(d.warranty);
+}
+function statusCell(d){ return statusDevTag(d.status); }
+function filterDevices(){
+  var kw = UI.kw.trim().toLowerCase();
+  return DB.devices.filter(function(d){
+    if(UI.cat && d.cat!==UI.cat) return false;
+    if(UI.loc && d.loc!==UI.loc) return false;
+    if(kw){
+      var s = (d.name+' '+d.model+' '+d.code+' '+d.cat+' '+d.loc+' '+d.status+' '+(d.manager||'')+' '+(d.dept||'')+' '+(d.supplier||'')).toLowerCase();
+      if(s.indexOf(kw)<0) return false;
+    }
+    return true;
+  });
+}
+function devTable(list){
+  if(!list.length) return '<div class="empty">'+ICON.empty+'没有匹配的设备记录</div>';
+  var so = function(s){ return STATUS_DEV.map(function(x){ return '<option'+(x===s?' selected':'')+'>'+x+'</option>'; }).join(''); };
+  var rows = list.map(function(d){
+    return '<tr class="'+devRowClass(d)+'">'
+      + '<td data-label="资产编号"><b>'+esc(d.code)+'</b><span class="cellsub">'+esc(d.buyDate||'')+' 采购</span></td>'
+      + '<td data-label="设备名称"><div>'+esc(d.name)+'<span class="cellsub">'+esc(d.model)+'</span></div></td>'
+      + '<td data-label="类别"><span class="tag tag-teal">'+esc(d.cat)+'</span></td>'
+      + '<td data-label="存放位置">'+esc(d.loc)+'</td>'
+      + '<td data-label="机器编号">'+esc(d.machineNo||'-')+'</td>'
+      + '<td data-label="状态"><select data-act="devStatus" data-id="'+d.id+'" style="width:auto;min-height:34px;font-size:13px;padding:5px 8px">'+so(d.status)+'</select></td>'
+      + '<td data-label="质保到期">'+warrantyCell(d)+'</td>'
+      + '<td data-label="管理人员"><div>'+esc(d.manager||'-')+'<span class="cellsub">'+esc(d.dept||'')+'</span></div></td>'
+      + '<td data-label="供应商"><div>'+esc(d.supplier||'-')+'<span class="cellsub">'+esc(d.remark||'')+'</span></div></td>'
+      + '<td data-label="操作"><div class="acts">'
+      +   '<button class="btn btn-line btn-sm" data-act="devEdit" data-id="'+d.id+'">编辑</button>'
+      +   '<button class="btn btn-line btn-sm" data-act="devDel" data-id="'+d.id+'" style="color:#b91c1c;border-color:#fecaca">删除</button>'
+      + '</div></td></tr>';
+  }).join('');
+  return '<div style="overflow-x:auto"><table><thead><tr>'
+    + '<th>资产编号</th><th>设备名称/型号</th><th>类别</th><th>存放位置</th><th>机器编号</th><th>状态</th><th>质保到期</th><th>管理人员</th><th>供应商/备注</th><th>操作</th>'
+    + '</tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+function renderLedger(){
+  var list = filterDevices();
+  var opt = function(arr,cur){ return arr.map(function(x){ return '<option value="'+esc(x)+'"'+(cur===x?' selected':'')+'>'+esc(x)+'</option>'; }).join(''); };
+  var locsAll = DB.devices.map(function(d){return d.loc;}).filter(function(v,i,a){return v&&a.indexOf(v)===i;});
+
+  var body;
+  if(UI.group){
+    var groups = {};
+    list.forEach(function(d){ (groups[d.loc||'未填写位置'] = groups[d.loc||'未填写位置'] || []).push(d); });
+    var keys = Object.keys(groups).sort();
+    body = keys.length ? keys.map(function(k){
+      var g=groups[k];
+      return '<div class="group-tit">'+esc(k)+'　<span class="muted">'+g.length+' 台设备</span></div>' + devTable(g);
+    }).join('') : '<div class="empty">'+ICON.empty+'没有匹配的设备记录</div>';
+  }else{
+    body = devTable(list);
+  }
+
+  var side = devRegPanel();
+
+  $('view').innerHTML =
+    '<div class="kpis">'
+    + kpi('在库资产', inStock(), '台', 'k-teal')
+    + kpi('在用数量', cntStatus('在用'), '台', 'k-gray')
+    + kpi('闲置数量', cntStatus('闲置'), '台', 'k-blue')
+    + kpi('故障数量', cntStatus('故障'), '台', 'k-red')
+    + kpi('已损坏数量', cntStatus('已损坏'), '台', 'k-dark')
+    + kpi('报废数量', cntStatus('报废'), '台', 'k-scrap')
+    + kpi('已出库', cntStatus('已出库'), '台', 'k-orange')
+    + kpi('借出中', pendingBorrows().length - overdueBorrows().length, '笔', 'k-orange')
+    + kpi('逾期', overdueBorrows().length, '笔', 'k-red')
+    + '</div>'
+    + '<div class="ledger-wrap">'
+    +   '<div class="ledger-main">'
+    +     '<div class="card"><div class="card-hd">'
+    +       '<h2>设备台账列表</h2>'
+    +       '<div class="toolbar">'
+    +         '<button class="btn btn-line btn-sm" data-act="toggleGroup">'+(UI.group?'切换为平铺列表':'按存放位置分组')+'</button>'
+    +         '<button class="btn btn-primary btn-sm" data-act="devNew">+ 新增设备</button>'
+    +       '</div>'
+    +     '</div>'
+    +     '<div class="card-bd">'
+    +       '<div class="toolbar" style="margin-bottom:12px">'
+    +         '<input type="text" id="fKw" placeholder="搜索：设备名称 / 型号 / 编号 / 位置" value="'+esc(UI.kw)+'" style="flex:1;min-width:180px">'
+    +         '<select id="fCat" style="flex:0 0 auto;width:auto"><option value="">全部类别</option>'+opt(CATS,UI.cat)+'</select>'
+    +         '<select id="fLoc" style="flex:0 0 auto;width:auto"><option value="">全部位置</option>'+opt(locsAll,UI.loc)+'</select>'
+    +         '<button class="btn btn-line btn-sm" data-act="resetFilter">重置</button>'
+    +       '</div>'
+    +       '<div class="muted" style="margin-bottom:8px">共 '+list.length+' 条记录　·　<span style="color:var(--danger)">红底=存在故障</span>　<span style="color:var(--warn)">橙底=质保即将到期(60天内)</span></div>'
+    +       body
+    +     '</div></div>'
+    +   '</div>'
+    +   side
+    + '</div>';
+
+  // 搜索筛选事件
+  $('fKw').addEventListener('input', function(e){ UI.kw=e.target.value; var p=e.target.selectionStart; renderLedger(); var el=$('fKw'); el.focus(); el.setSelectionRange(p,p); });
+  $('fCat').addEventListener('change', function(e){ UI.cat=e.target.value; renderLedger(); });
+  $('fLoc').addEventListener('change', function(e){ UI.loc=e.target.value; renderLedger(); });
+}
+function kpi(t,v,u,cls){
+  return '<div class="kpi '+(cls||'')+'"><div class="k-t">'+esc(t)+'</div><div class="k-v">'+v+'<span class="k-u">'+esc(u)+'</span></div></div>';
+}
+
+/* 设备表单 */
+function devForm(d){
+  d = d || {};
+  var sel = function(arr,cur){ return arr.map(function(x){return '<option'+(cur===x?' selected':'')+'>'+esc(x)+'</option>';}).join(''); };
+  return '<div class="grid-2">'
+  + fld('设备名称 *','<input id="f_name" value="'+esc(d.name||'')+'" placeholder="如：交互式智能平板">')
+  + fld('设备型号','<input id="f_model" value="'+esc(d.model||'')+'" placeholder="如：希沃 MC10EA 75寸">')
+  + fld('设备编号（资产编号）*','<input id="f_code" value="'+esc(d.code||'')+'" placeholder="如：ZC-2026-0101">')
+  + fld('设备类别','<select id="f_cat">'+sel(CATS,d.cat)+'</select>')
+  + fld('存放位置','<input id="f_loc" list="locList" value="'+esc(d.loc||'')+'" placeholder="如：教学楼A-101教室"><datalist id="locList">'+LOCS.map(function(x){return '<option value="'+esc(x)+'">';}).join('')+'</datalist>')
+  + fld('使用状态','<select id="f_status">'+sel(STATUS_DEV, d.status||'在用')+'</select>')
+  + fld('管理人员','<input id="f_manager" value="'+esc(d.manager||'')+'" placeholder="设备保管责任人，如：张老师">')
+  + fld('管理部门','<input id="f_dept" value="'+esc(d.dept||'')+'" placeholder="如：信息中心 / 计算机教研组">')
+  + fld('供应商','<input id="f_supplier" value="'+esc(d.supplier||'')+'">')
+  + fld('机器编号','<input id="f_machine" value="'+esc(d.machineNo||'')+'" placeholder="选填，如：SRV-A101-01">')
+  + fld('机器序列号','<input id="f_serial" value="'+esc(d.serial||'')+'" placeholder="选填，如：SN-A101-0001">')
+  + fld('采购日期','<input id="f_buyDate" type="date" value="'+esc(d.buyDate||'')+'">')
+  + fld('质保到期日期','<input id="f_warranty" type="date" value="'+esc(d.warranty||'')+'">')
+  + '</div>'
+  + '<div class="muted" style="margin:2px 0 4px;font-size:13px">提示：手动将使用状态改为「已出库」需该设备已有出库（借领用）登记，否则将拦截并提示先去「出入库登记」登记。</div>'
+  + fld('备注','<textarea id="f_remark" placeholder="选填">'+esc(d.remark||'')+'</textarea>')
+  + (d.id ? '<div style="margin-top:14px"><button class="btn btn-line btn-sm" data-act="devDel" data-id="'+d.id+'" style="color:var(--danger);border-color:#fecaca">删除该设备</button></div>' : '');
+}
+function fld(label, inner){ return '<div><label class="fl">'+label+'</label>'+inner+'</div>'; }
+function v(id){ var el=$(id); return el? String(el.value).trim() : ''; }
+function n(id){ var x=parseInt(v(id),10); return isNaN(x)?0:x; }
+
+function devSubmit(id){
+  if(!v('f_name') || !v('f_code')){ toast('设备名称和资产编号必填'); return false; }
+  var obj = {
+    name:v('f_name'), model:v('f_model'), code:v('f_code'), cat:v('f_cat'), loc:v('f_loc'),
+    supplier:v('f_supplier'), status:v('f_status')||'在用', manager:v('f_manager'), dept:v('f_dept'), machineNo:v('f_machine'), serial:v('f_serial'),
+    buyDate:v('f_buyDate'), warranty:v('f_warranty'), remark:v('f_remark')
+  };
+  if(obj.status==='已出库'){
+    var _tid = id;
+    if(!_tid){ toast('新登记的设备不能直接设为「已出库」，请先保存为在用，再到「出入库登记」登记出库。'); return false; }
+    var _hasOut = DB.flows.some(function(f){ return f.type==='out' && f.devId===_tid; });
+    if(!_hasOut){ toast('未找到该设备的出库（借领用）记录，不能手动设为「已出库」。请先在「出入库登记」中登记出库。'); return false; }
+  }
+  if(id){
+    var d = devById(id);
+    for(var k in obj) d[k]=obj[k];
+  }else{
+    obj.id = uid('dev');
+    DB.devices.unshift(obj);
+  }
+  save(); render(); toast(id?'设备信息已更新':'设备已新增');
+  return true;
+}
+
+/* 设备资产登记（右侧面板） */
+function devRegPanel(){
+  var sel = function(arr,cur){ return arr.map(function(x){return '<option'+(cur===x?' selected':'')+'>'+esc(x)+'</option>';}).join(''); };
+  return '<div class="ledger-side"><div class="card reg-panel">'
+    + '<div class="card-hd"><h2>设备资产登记</h2></div>'
+    + '<div class="card-bd">'
+    +   '<div class="reg-tip">在此登记设备资产，左侧台账实时对应更新。支持单台快速录入，或用表格批量导入 / 导出。</div>'
+    +   '<div class="reg-stat">'
+    +     '<div class="s"><b>'+DB.devices.length+'<span style="font-size:12px"> 台</span></b><span>已登记资产</span></div>'
+    +     '<div class="s"><b>'+inStock()+'<span style="font-size:12px"> 台</span></b><span>在库数量</span></div>'
+    +   '</div>'
+    +   '<form class="reg-form" onsubmit="return false">'
+    +     '<div class="grid-2">'
+    +       fld('设备名称 *','<input id="f2_name" placeholder="如：交互式智能平板">')
+    +       fld('资产编号 *','<input id="f2_code" placeholder="如：ZC-2026-0101">')
+    +       fld('设备类别','<select id="f2_cat">'+sel(CATS,'')+'</select>')
+    +       fld('存放位置','<input id="f2_loc" list="locList2" placeholder="如：教学楼A-101教室"><datalist id="locList2">'+LOCS.map(function(x){return '<option value="'+esc(x)+'">';}).join('')+'</datalist>')
+    +       fld('使用状态','<select id="f2_status">'+sel(STATUS_DEV,'在用')+'</select>')
+    +       fld('管理人员','<input id="f2_manager" placeholder="保管责任人，如：张老师">')
+    +       fld('管理部门','<input id="f2_dept" placeholder="如：信息中心 / 计算机教研组">')
+    +     '</div>'
+    +     '<button class="btn btn-primary" data-act="devQuickAdd" style="width:100%;margin-top:10px;justify-content:center">+ 登记该资产</button>'
+    +   '</form>'
+    +   '<div class="reg-actions" style="margin-top:14px">'
+    +     '<button class="btn btn-line" data-act="importCsvDevice" style="justify-content:center">导入资产表（CSV 批量）</button>'
+    +     '<button class="btn btn-line" data-act="exportDeviceCsv" style="justify-content:center">导出资产表（CSV）</button>'
+    +   '</div>'
+    +   '<div class="muted" style="margin-top:12px">批量表头与「导出资产表」一致，可先导出后按格式填写再导入；导入按资产编号去重。</div>'
+    + '</div></div></div>';
+}
+function devQuickSubmit(){
+  var name=v('f2_name'), code=v('f2_code');
+  if(!name || !code){ toast('设备名称和资产编号必填'); return; }
+  if(DB.devices.some(function(d){ return d.code===code; })){ toast('资产编号 '+code+' 已存在，请勿重复登记'); return; }
+  DB.devices.unshift({id:uid('dev'),seed:false,name:name,model:'',code:code,cat:v('f2_cat'),loc:v('f2_loc'),status:v('f2_status')||'在用',manager:v('f2_manager'),dept:v('f2_dept'),machineNo:'',serial:'',supplier:'',buyDate:'',warranty:'',remark:''});
+  save(); render(); toast('资产已登记，已同步至左侧台账');
+}
+
+/* ======================= 模块2：设备入库/出库登记 ======================= */
+function renderFlow(){
+  var list = DB.flows.slice().sort(function(a,b){ return (b.time||'').localeCompare(a.time||''); });
+  var dm = devMap();
+  var rows = list.length ? list.map(function(f){
+    var isIn = f.type==='in';
+    var d = dm[f.devId]||{};
+    var devTxt = (f.devCode ? (f.devCode+' '+f.devName) : devLabel(f.devId));
+    var retTag = '';
+    if(!isIn){
+      retTag = f.ret==='已归还'
+        ? '<span class="tag tag-green">已归还</span>'
+        : '<span class="tag tag-orange">未归还</span> <button class="btn btn-line btn-sm" data-act="flowReturn" data-id="'+f.id+'">登记归还</button>';
+    }else{ retTag = '<span class="muted">—</span>'; }
+    return '<tr>'
+      + '<td data-label="时间">'+esc(f.time)+'</td>'
+      + '<td data-label="类型">'+(isIn?'<span class="tag tag-green">入库(归还)</span>':'<span class="tag tag-blue">出库(借领用)</span>')+'</td>'
+      + '<td data-label="设备">'+esc(devTxt)+'</td>'
+      + '<td data-label="数量"><b>'+(isIn?'+':'-')+(+f.qty||0)+'</b></td>'
+      + '<td data-label="机器编号">'+esc(d.machineNo||f.machineNo||'-')+'</td>'
+      + '<td data-label="机器序列号">'+esc(d.serial||f.serial||'-')+'</td>'
+      + '<td data-label="'+(isIn?'经办人':'领用人')+'">'+esc(f.person||'-')+'</td>'
+      + '<td data-label="'+(isIn?'来源':'领用部门')+'">'+esc(isIn?(f.source||'-'):(f.dept||'-'))+'</td>'
+      + '<td data-label="归还状态">'+retTag+'</td>'
+      + '<td data-label="用途">'+esc(f.purpose||'-')+'</td>'
+      + '<td data-label="备注">'+esc(f.remark||'-')+'</td>'
+      + '<td data-label="操作"><button class="btn btn-line btn-sm" data-act="flowEdit" data-id="'+f.id+'">编辑</button></td>'
+      + '</tr>';
+  }).join('') : '';
+
+  var unret = DB.flows.filter(function(f){ return f.type==='out' && f.ret==='未归还'; });
+
+  $('view').innerHTML =
+    '<div class="kpis">'
+    + kpi('入库记录', DB.flows.filter(function(f){return f.type==='in';}).length, '条', 'k-teal')
+    + kpi('出库记录', DB.flows.filter(function(f){return f.type==='out';}).length, '条', 'k-gray')
+    + kpi('未归还领用', unret.length, '笔', 'k-orange')
+    + kpi('累计出库台数', sum(DB.flows.filter(function(f){return f.type==='out';}),'qty'), '台', 'k-gray')
+    + '</div>'
+    + '<div class="card"><div class="card-hd"><h2>出入库登记</h2>'
+    +   '<div class="toolbar">'
+    +     '<button class="btn btn-primary btn-sm" data-act="flowNew" data-type="in">+ 入库登记（归还）</button>'
+    +     '<button class="btn btn-line btn-sm" data-act="flowNew" data-type="out">+ 出库领用</button>'
+    +   '</div></div>'
+    +   '<div class="card-bd muted">入库（归还）：把「已出库」设备登记归还，状态恢复为「在用」；出库（借领用）：把「在用/闲置」设备登记借出，状态置为「已出库」。每笔登记都对应设备台账中的真实设备，账实一一对应。历史流水只可新增与编辑，<b>不可删除</b>，保证可追溯。</div>'
+    + '</div>'
+    + '<div class="card"><div class="card-hd"><h2>历史流水记录（共 '+DB.flows.length+' 条）</h2>'
+    +   '<div class="toolbar">'
+    +     '<button class="btn btn-ghost btn-sm" data-act="flowReport">查看明细报表</button>'
+    +     '<button class="btn btn-ghost btn-sm" data-act="flowReportCsv">导出报表(CSV)</button>'
+    +     '<button class="btn btn-ghost btn-sm" data-act="expFlows">导出流水表(CSV)</button>'
+    +   '</div></div><div class="card-bd">'
+    + (rows ? '<div style="overflow-x:auto"><table><thead><tr><th>时间</th><th>类型</th><th>设备</th><th>数量</th><th>机器编号</th><th>机器序列号</th><th>经办/领用人</th><th>来源/领用部门</th><th>归还状态</th><th>用途</th><th>备注</th><th>操作</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+            : '<div class="empty">'+ICON.empty+'暂无出入库记录，点击上方按钮登记第一条</div>')
+    + '</div></div>';
+}
+function flowForm(type, rec){
+  rec = rec || {};
+  var isIn = type==='in';
+  var editing = !!rec.id;
+  if(editing){
+    return '<div class="muted" style="margin-bottom:10px">修正<b>本条记录</b>的时间、人员、用途等元数据，<b>不会改动设备台账</b>。</div>'
+    + '<div class="grid-2">'
+    + fld('时间','<input id="f_time" type="datetime-local" value="'+((rec.time||nowStr()).replace(' ','T'))+'">')
+    + fld(isIn?'经办人':'领用人','<input id="f_person" value="'+esc(rec.person||'')+'">')
+    + (isIn ? fld('来源说明','<input id="f_source" value="'+esc(rec.source||'')+'">') : fld('领用部门','<input id="f_dept" value="'+esc(rec.dept||'')+'">'))
+    + fld('用途','<input id="f_purpose" value="'+esc(rec.purpose||'')+'">')
+    + '</div>'
+    + fld('备注','<textarea id="f_remark2">'+esc(rec.remark||'')+'</textarea>');
+  }
+  if(isIn){
+    var retOpts = DB.devices.filter(function(d){ return d.status==='已出库'; }).map(function(d){
+      return '<option value="'+d.id+'"'+(d.id===(rec.devId||'')?' selected':'')+'>'+esc(d.code+' '+d.name+'（'+d.loc+'）')+'</option>';
+    }).join('');
+    return '<div class="muted" style="margin-bottom:10px">入库即「归还」：把当前「已出库」的设备登记归还，设备状态恢复为「在用」，并记入流水（与台账一一对应）。</div>'
+    + '<div class="grid-2">'
+    + fld('归还设备 *','<select id="f_dev">'+(retOpts||'<option value="">无已出库设备可归还</option>')+'</select>')
+    + fld('归还人','<input id="f_person" placeholder="如：李老师 / 计算机社">')
+    + fld('归还时间','<input id="f_time" type="datetime-local" value="'+((rec.time||nowStr()).replace(' ','T'))+'">')
+    + '</div>'
+    + fld('备注','<textarea id="f_remark2"></textarea>');
+  } else {
+    var devOpts = DB.devices.filter(function(d){ return d.status==='在用'||d.status==='闲置'; }).map(function(d){
+      return '<option value="'+d.id+'"'+(d.id===(rec.devId||'')?' selected':'')+'>'+esc(d.code+' '+d.name+'（'+d.loc+'·'+d.status+'）')+'</option>';
+    }).join('');
+    return '<div class="muted" style="margin-bottom:10px">出库即「借领用」：把所选在用/闲置设备的状态标记为「已出库」（移出在用库存），并记入流水（与台账一一对应）。</div>'
+    + '<div class="grid-2">'
+    + fld('出库设备 *','<select id="f_dev">'+(devOpts||'<option value="">无可用设备（在用/闲置）可出库</option>')+'</select>')
+    + fld('领用人','<input id="f_person" placeholder="如：李老师">')
+    + fld('领用部门','<input id="f_dept" placeholder="如：高一年级组 / 教务处">')
+    + fld('出库时间','<input id="f_time" type="datetime-local" value="'+((rec.time||nowStr()).replace(' ','T'))+'">')
+    + fld('用途','<input id="f_purpose" placeholder="如：期末统考阅卷">')
+    + '</div>'
+    + fld('备注','<textarea id="f_remark2"></textarea>');
+  }
+}
+function flowEdit(id){
+  var f = DB.flows.filter(function(x){return x.id===id;})[0];
+  if(!f) return;
+  var isIn = f.type==='in';
+  openModal({
+    title: (isIn?'编辑入库记录':'编辑出库记录'),
+    body: '<div class="muted" style="margin-bottom:10px">仅修正<b>本条记录</b>的内容（时间、经办人、编号、备注等）。为避免账实错乱，修改<b>不会联动改动设备台账数量</b>；若数量登记有误，请删除该记录后重新登记。</div>' + flowForm(f.type, f)
+    + '<div style="margin-top:14px;border-top:1px dashed #eee;padding-top:12px">'
+    + '<button class="btn btn-danger btn-sm" data-act="flowDelPwd" data-id="'+f.id+'" style="color:#fff;background:#dc2626;border-color:#dc2626">删除此出入库记录（需管理密码）</button>'
+    + '<div class="muted" style="margin-top:6px">历史流水仅可新增与编辑，不可直接删除；如确需删除须输入管理密码，以保证账实可追溯。</div></div>',
+    okText:'保存修改',
+    onOk:function(){ return flowUpdate(f.id); }
+  });
+}
+function flowUpdate(id){
+  var f = DB.flows.filter(function(x){return x.id===id;})[0];
+  if(!f) return false;
+  f.time = (v('f_time')||nowStr()).replace('T',' ').slice(0,16);
+  f.person = v('f_person');
+  if(f.type==='in'){ f.source=v('f_source'); } else { f.dept=v('f_dept'); }
+  f.purpose = v('f_purpose');
+  f.remark = v('f_remark2');
+  save(); render(); toast('流水记录已修改（不影响设备台账）');
+  return true;
+}
+function flowSubmit(type){
+  var isIn = type==='in';
+  if(isIn){
+    var devId=v('f_dev'); if(!devId){ toast('请选择要归还的设备'); return false; }
+    var d=devById(devId); if(!d){ toast('设备不存在'); return false; }
+    if(d.status!=='已出库'){ toast('该设备当前不是「已出库」状态，无需归还'); return false; }
+    d.status='在用';
+    DB.flows.unshift({id:uid('fl'),seed:false,type:'in',devId:devId,devCode:d.code,devName:d.name,qty:1,
+      time:(v('f_time')||nowStr()).replace('T',' ').slice(0,16),person:v('f_person'),dept:'',source:'',
+      ret:'已归还',machineNo:d.machineNo||'',serial:d.serial||'',purpose:'',remark:v('f_remark2')});
+    save(); render(); toast('归还登记成功，设备已恢复「在用」');
+    return true;
+  } else {
+    var devId=v('f_dev'); if(!devId){ toast('请选择要出库的设备'); return false; }
+    var d=devById(devId); if(!d){ toast('设备不存在'); return false; }
+    if(d.status==='已出库'){ toast('该设备已处于出库状态'); return false; }
+    d.status='已出库';
+    DB.flows.unshift({id:uid('fl'),seed:false,type:'out',devId:devId,devCode:d.code,devName:d.name,qty:1,
+      time:(v('f_time')||nowStr()).replace('T',' ').slice(0,16),person:v('f_person'),dept:v('f_dept'),
+      ret:'未归还',machineNo:d.machineNo||'',serial:d.serial||'',purpose:v('f_purpose'),remark:v('f_remark2')});
+    save(); render(); toast('出库登记成功，设备已标记为「已出库」');
+    return true;
+  }
+}
+function flowReturn(id){
+  var f = DB.flows.filter(function(x){return x.id===id;})[0];
+  if(!f) return;
+  openConfirm('登记归还','确认将「'+esc((f.devCode||'')+' '+(f.devName||''))+'」标记为「已归还」并恢复为「在用」状态？', function(){
+    f.ret='已归还';
+    var d=devById(f.devId);
+    if(d){ d.status='在用'; }
+    save(); render(); toast('已登记归还，设备恢复在用');
+  });
+}
+
+/* ======================= 出入库明细报表（台账主数据 + 流水合一） ======================= */
+function flowReportRows(){
+  var dm = devMap();
+  return DB.flows.slice().sort(function(a,b){ return (b.time||'').localeCompare(a.time||''); }).map(function(f){
+    var d = dm[f.devId]||{};
+    var type = f.type==='in' ? '入库(归还)' : '出库(借领用)';
+    return [type, d.code||f.devCode||'', d.name||f.devName||'', d.cat||'', d.loc||'', d.status||'',
+      d.machineNo||f.machineNo||'', d.serial||f.serial||'', f.person||'', f.dept||'', f.ret||'',
+      f.purpose||'', f.time||'', f.remark||''];
+  });
+}
+function exportFlowReport(){
+  var H=['流水类型','资产编号','设备名称','设备类别','当前存放位置','当前使用状态','机器编号','设备序列号','经办/领用人','领用部门','归还状态','用途','发生时间','备注'];
+  var R=flowReportRows();
+  downloadCSV('出入库明细报表_'+today().replace(/-/g,'')+'.csv', H, R);
+  toast('已导出出入库明细报表（'+R.length+' 条）');
+}
+function viewFlowReport(){
+  var H=['流水类型','资产编号','设备名称','类别','当前位置','当前状态','机器编号','序列号','经办/领用人','领用部门','归还状态','用途','时间','备注'];
+  var R=flowReportRows();
+  var head=H.map(function(h){return '<th>'+h+'</th>';}).join('');
+  var body=R.length ? R.map(function(r){ return '<tr>'+r.map(function(c){return '<td>'+esc(c===''?'':c)+'</td>';}).join('')+'</tr>'; }).join('')
+                   : '<tr><td colspan="'+H.length+'">暂无记录</td></tr>';
+  openModal({ title:'出入库明细报表（共 '+R.length+' 条）', narrow:false, okText:'打印', onOk:function(){ window.print(); },
+    body:'<div class="muted" style="margin-bottom:8px">报表含设备台账主数据 + 出入库流水字段，账实一一对应；点击「打印」可输出或存为 PDF。</div>'
+      +'<div style="overflow-x:auto;max-height:62vh"><table><thead><tr>'+head+'</tr></thead><tbody>'+body+'</tbody></table></div>' });
+}
+
+/* ======================= 模块3：维修报修跟进 ======================= */
+function statusTag(s){
+  var m={'待处理':'tag-red','维修中':'tag-orange','已修复':'tag-green','报废':'tag-gray'};
+  return '<span class="tag '+(m[s]||'tag-gray')+'">'+esc(s)+'</span>';
+}
+function renderRepair(){
+  var list = DB.repairs.slice().sort(function(a,b){ return (b.time||'').localeCompare(a.time||''); });
+  if(UI.repairFilter) list = list.filter(function(r){ return r.status===UI.repairFilter; });
+  var pend = pendingRepairs();
+
+  var rows = list.length ? list.map(function(r){
+    var opts = REPAIR_STATUS.map(function(s){ return '<option'+(r.status===s?' selected':'')+'>'+s+'</option>'; }).join('');
+    var cls = (r.status==='待处理') ? 'row-danger' : (r.status==='维修中' ? 'row-warn' : '');
+    return '<tr class="'+cls+'">'
+      + '<td data-label="报修时间">'+esc(r.time)+'</td>'
+      + '<td data-label="设备"><div>'+esc(devLabel(r.devId))+'</div></td>'
+      + '<td data-label="故障描述"><div>'+esc(r.desc)+'<span class="cellsub">'+esc(r.remark||'')+'</span></div></td>'
+      + '<td data-label="报修人">'+esc(r.reporter||'-')+'</td>'
+      + '<td data-label="状态">'+statusTag(r.status)+'</td>'
+      + '<td data-label="维修人员">'+esc(r.worker||'-')+'</td>'
+      + '<td data-label="维修结果"><div>'+esc(r.result||'-')+'</div></td>'
+      + '<td data-label="花费">'+((+r.cost||0)>0 ? '¥'+(+r.cost) : '-')+'</td>'
+      + '<td data-label="操作"><div class="acts">'
+      +   '<select data-act="rpStatus" data-id="'+r.id+'" style="width:auto;min-height:34px;font-size:13px;padding:5px 8px">'+opts+'</select>'
+      +   '<button class="btn btn-line btn-sm" data-act="rpEdit" data-id="'+r.id+'">编辑</button>'
+      + '</div></td></tr>';
+  }).join('') : '';
+
+  var filterBtns = ['','待处理','维修中','已修复','报废'].map(function(s){
+    return '<button class="btn '+(UI.repairFilter===s?'btn-primary':'btn-line')+' btn-sm" data-act="rpFilter" data-s="'+s+'">'+(s||'全部')+'</button>';
+  }).join('');
+
+  $('view').innerHTML =
+    (pend.length ? '<div class="alert alert-danger" style="margin-bottom:14px">'+ICON.warn+'<div><b>待处理 / 维修中工单 '+pend.length+' 张：</b>'
+        + pend.map(function(r){ return '<span class="chip">'+esc(devLabel(r.devId))+'｜'+esc(r.status)+'｜'+esc(r.desc.slice(0,18))+'</span>'; }).join('')
+        + '</div></div>' : '')
+    + '<div class="kpis">'
+    + kpi('工单总数', DB.repairs.length, '张', 'k-gray')
+    + kpi('待处理', DB.repairs.filter(function(r){return r.status==='待处理';}).length, '张', 'k-red')
+    + kpi('维修中', DB.repairs.filter(function(r){return r.status==='维修中';}).length, '张', 'k-orange')
+    + kpi('累计维修花费', sum(DB.repairs,'cost'), '元', 'k-teal')
+    + '</div>'
+    + '<div class="card"><div class="card-hd"><h2>报修工单列表</h2>'
+    +   '<div class="toolbar">'+filterBtns+'<button class="btn btn-ghost btn-sm" data-act="rpReport">查看明细报表</button><button class="btn btn-ghost btn-sm" data-act="rpReportCsv">导出报表(CSV)</button><button class="btn btn-ghost btn-sm" data-act="expRepairs">导出工单表(CSV)</button><button class="btn btn-primary btn-sm" data-act="rpNew">+ 新建报修工单</button></div>'
+    + '</div><div class="card-bd">'
+    + (rows ? '<div style="overflow-x:auto"><table><thead><tr><th>报修时间</th><th>关联设备</th><th>故障描述</th><th>报修人</th><th>状态</th><th>维修人员</th><th>维修结果</th><th>花费</th><th>操作</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+            : '<div class="empty">'+ICON.empty+'暂无工单记录</div>')
+    + '</div></div>';
+}
+function rpForm(r){
+  r = r || {};
+  var devOpts = DB.devices.map(function(d){
+    return '<option value="'+d.id+'"'+(r.devId===d.id?' selected':'')+'>'+esc(d.code+' '+d.name+'（'+d.loc+'）')+'</option>';
+  }).join('');
+  var stOpts = REPAIR_STATUS.map(function(s){ return '<option'+(r.status===s?' selected':'')+'>'+s+'</option>'; }).join('');
+  return '<div class="grid-2">'
+  + fld('关联设备资产编号 *','<select id="r_dev">'+(devOpts||'<option value="">请先新增设备</option>')+'</select>')
+  + fld('报修时间','<input id="r_time" type="datetime-local" value="'+esc((r.time||nowStr()).replace(' ','T'))+'">')
+  + fld('报修人','<input id="r_reporter" value="'+esc(r.reporter||'')+'" placeholder="如：刘老师 / 保卫科">')
+  + fld('维修状态','<select id="r_status">'+stOpts+'</select>')
+  + fld('维修人员','<input id="r_worker" value="'+esc(r.worker||'')+'" placeholder="如：网管室-赵工">')
+  + fld('维修花费（元）','<input id="r_cost" type="number" min="0" value="'+(r.cost||0)+'">')
+  + '</div>'
+  + fld('故障描述 *','<textarea id="r_desc" placeholder="请描述故障现象、影响范围">'+esc(r.desc||'')+'</textarea>')
+  + fld('维修结果','<textarea id="r_result" placeholder="修复方案 / 更换配件">'+esc(r.result||'')+'</textarea>')
+  + fld('备注','<input id="r_remark" value="'+esc(r.remark||'')+'">');
+}
+function rpSubmit(id){
+  if(!v('r_dev')){ toast('请先在设备台账中新增设备'); return false; }
+  if(!v('r_desc')){ toast('故障描述必填'); return false; }
+  var obj={
+    devId:v('r_dev'), time:(v('r_time')||nowStr()).replace('T',' ').slice(0,16), reporter:v('r_reporter'),
+    status:v('r_status')||'待处理', worker:v('r_worker'), cost:n('r_cost'), desc:v('r_desc'),
+    result:v('r_result'), remark:v('r_remark')
+  };
+  if(id){
+    var r = DB.repairs.filter(function(x){return x.id===id;})[0];
+    for(var k in obj) r[k]=obj[k];
+  }else{
+    obj.id=uid('rp');
+    DB.repairs.unshift(obj);
+    // 新建工单时同步把设备标记为故障
+    var d=devById(obj.devId);
+    if(d && obj.status!=='已修复'){ d.status='故障'; }
+  }
+  save(); render(); toast(id?'工单已更新':'报修工单已创建，设备已标记故障');
+  return true;
+}
+function rpChangeStatus(id, st){
+  var r = DB.repairs.filter(function(x){return x.id===id;})[0];
+  if(!r || r.status===st) return;
+  var old = r.status;
+  var d = devById(r.devId);
+  var apply = function(){
+    r.status = st;
+    var d = devById(r.devId);
+    if(d){
+      if(st==='已修复') d.status='在用';
+      else if(st==='报废') d.status='报废';
+      else d.status='故障';
+    }
+    save(); render(); toast('工单状态已更新为「'+st+'」');
+  };
+  if(st==='报废') openConfirm('状态流转','标记为「报废」，同时把设备状态置为「报废」（资产销账，移出可用库存）。', apply, render);
+  else apply();
+}
+
+/* ======================= 维修工单明细报表（台账主数据 + 工单字段合一） ======================= */
+function repairReportRows(){
+  var dm = devMap();
+  return DB.repairs.slice().sort(function(a,b){ return (b.time||'').localeCompare(a.time||''); }).map(function(r){
+    var d = dm[r.devId]||{};
+    return [r.id, d.code||'', d.name||r.devName||'', d.cat||'', d.loc||'', d.status||'',
+      d.machineNo||'', d.serial||'', r.time||'', r.desc||'', r.reporter||'', r.status||'',
+      r.worker||'', r.result||'', (r.cost||0), r.remark||''];
+  });
+}
+function exportRepairReport(){
+  var H=['工单号','关联设备编号','设备名称','设备类别','当前存放位置','当前使用状态','机器编号','设备序列号','报修时间','故障描述','报修人','维修状态','维修人员','维修结果','维修花费(元)','备注'];
+  var R=repairReportRows();
+  downloadCSV('维修明细报表_'+today().replace(/-/g,'')+'.csv', H, R);
+  toast('已导出维修明细报表（'+R.length+' 张）');
+}
+function viewRepairReport(){
+  var H=['工单号','设备编号','设备名称','类别','当前位置','当前状态','机器编号','序列号','报修时间','故障描述','报修人','维修状态','维修人员','维修结果','花费(元)','备注'];
+  var R=repairReportRows();
+  var head=H.map(function(h){return '<th>'+h+'</th>';}).join('');
+  var body=R.length ? R.map(function(r){ return '<tr>'+r.map(function(c){return '<td>'+esc((c===''||c==null)?'':c)+'</td>';}).join('')+'</tr>'; }).join('')
+                   : '<tr><td colspan="'+H.length+'">暂无记录</td></tr>';
+  openModal({ title:'维修工单明细报表（共 '+R.length+' 张）', narrow:false, okText:'打印', onOk:function(){ window.print(); },
+    body:'<div class="muted" style="margin-bottom:8px">报表含设备台账主数据 + 工单字段，账实一一对应；点击「打印」可输出或存为 PDF。</div>'
+      +'<div style="overflow-x:auto;max-height:62vh"><table><thead><tr>'+head+'</tr></thead><tbody>'+body+'</tbody></table></div>' });
+}
+
+/* ======================= 模块3.5：设备借用登记（独立借用台账） ======================= */
+function renderBorrow(){
+  var list = DB.borrows.slice().sort(function(a,b){ return (b.outDate||'').localeCompare(a.outDate||''); });
+  if(UI.borrowFilter) list = list.filter(function(b){ return borrowStatus(b)===UI.borrowFilter; });
+  var pend = pendingBorrows();
+  var ov = overdueBorrows();
+
+  var rows = list.length ? list.map(function(b){
+    var st = borrowStatus(b);
+    var stTag = st==='已归还' ? '<span class="tag tag-green">已归还</span>'
+              : st==='逾期'   ? '<span class="tag tag-red">逾期</span>'
+              :                 '<span class="tag tag-orange">借出中</span>';
+    var act = (st==='已归还') ? ''
+      : '<button class="btn btn-line btn-sm" data-act="borrowReturn" data-id="'+b.id+'">登记归还</button>';
+    return '<tr class="'+(st==='逾期'?'row-danger':'')+'">'
+      + '<td data-label="借用人">'+esc(b.person||'-')+'</td>'
+      + '<td data-label="借用部门">'+esc(b.dept||'-')+'</td>'
+      + '<td data-label="设备"><div>'+esc(devLabel(b.devId))+'</div></td>'
+      + '<td data-label="借出日期">'+esc(b.outDate||'-')+'</td>'
+      + '<td data-label="预计归还">'+esc(b.expectDate||'-')+'</td>'
+      + '<td data-label="实际归还">'+esc(b.inDate||'-')+'</td>'
+      + '<td data-label="用途">'+esc(b.purpose||'-')+'</td>'
+      + '<td data-label="状态">'+stTag+'</td>'
+      + '<td data-label="操作"><div class="acts">'+act
+      +   '<button class="btn btn-line btn-sm" data-act="borrowEdit" data-id="'+b.id+'">编辑</button>'
+      + '</div></td></tr>';
+  }).join('') : '';
+
+  var filterBtns = ['','借出中','逾期','已归还'].map(function(s){
+    return '<button class="btn '+(UI.borrowFilter===s?'btn-primary':'btn-line')+' btn-sm" data-act="borrowFilter" data-s="'+s+'">'+(s||'全部')+'</button>';
+  }).join('');
+
+  $('view').innerHTML =
+    (ov.length ? '<div class="alert alert-warn" style="margin-bottom:14px">'+ICON.bell+'<div><b>借用逾期 '+ov.length+' 笔：</b>'+ov.map(function(b){return '<span class="chip">'+esc(b.person)+'｜'+esc(devLabel(b.devId))+'（应还 '+esc(b.expectDate)+'）</span>';}).join('')+'</div></div>' : '')
+    + '<div class="kpis">'
+    + kpi('借出中', pend.length, '笔', 'k-orange')
+    + kpi('已逾期', ov.length, '笔', 'k-red')
+    + kpi('已归还', DB.borrows.filter(function(b){return borrowStatus(b)==='已归还';}).length, '笔', 'k-green')
+    + kpi('累计借用', DB.borrows.length, '笔', 'k-teal')
+    + '</div>'
+    + '<div class="card"><div class="card-hd"><h2>设备借用登记</h2>'
+    +   '<div class="toolbar">'+filterBtns
+    +     '<button class="btn btn-ghost btn-sm" data-act="borrowReport">查看明细报表</button>'
+    +     '<button class="btn btn-ghost btn-sm" data-act="borrowReportCsv">导出报表(CSV)</button>'
+    +     '<button class="btn btn-ghost btn-sm" data-act="expBorrows">导出借用表(CSV)</button>'
+    +     '<button class="btn btn-primary btn-sm" data-act="borrowNew">+ 新建借用登记</button>'
+    +   '</div></div>'
+    +   '<div class="card-bd muted">登记设备借出：选设备、填借用人与预计归还日期；到期待还未还自动标红「逾期」。点「登记归还」记录实际归还日。借用台账独立记录「谁借了什么、何时该还」，与「出入库登记」（库存数量变动）互不冲突，二者按需使用。</div>'
+    + '</div>'
+    + '<div class="card"><div class="card-hd"><h2>借用记录（共 '+DB.borrows.length+' 条）</h2></div><div class="card-bd">'
+    + (rows ? '<div style="overflow-x:auto"><table><thead><tr><th>借用人</th><th>借用部门</th><th>设备</th><th>借出日期</th><th>预计归还</th><th>实际归还</th><th>用途</th><th>状态</th><th>操作</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+            : '<div class="empty">'+ICON.empty+'暂无借用记录，点击「+ 新建借用登记」开始</div>')
+    + '</div></div>';
+}
+function borrowForm(b){
+  b = b || {};
+  var devOpts = DB.devices.map(function(d){
+    return '<option value="'+d.id+'"'+(b.devId===d.id?' selected':'')+'>'+esc(d.code+' '+d.name+'（'+d.loc+'·'+d.status+'）')+'</option>';
+  }).join('');
+  return '<div class="grid-2">'
+  + fld('借用设备 *','<select id="b_dev">'+(devOpts||'<option value="">请先在设备台账新增设备</option>')+'</select>')
+  + fld('借用人 *','<input id="b_person" value="'+esc(b.person||'')+'" placeholder="如：李老师 / 高二(3)班">')
+  + fld('借用部门/班级','<input id="b_dept" value="'+esc(b.dept||'')+'" placeholder="如：教务处 / 高一(2)班">')
+  + fld('借出日期','<input id="b_out" type="date" value="'+(b.outDate||today())+'">')
+  + fld('预计归还日期 *','<input id="b_expect" type="date" value="'+esc(b.expectDate||'')+'">')
+  + fld('用途','<input id="b_purpose" value="'+esc(b.purpose||'')+'" placeholder="如：公开课演示">')
+  + '</div>'
+  + fld('备注','<textarea id="b_remark" placeholder="选填">'+esc(b.remark||'')+'</textarea>')
+  + (b.id && b.inDate ? '<div class="muted" style="margin-top:8px">该记录已于 '+esc(b.inDate)+' 归还。</div>' : '')
+  + (b.id ? '<div style="margin-top:14px;border-top:1px dashed #eee;padding-top:12px">'
+      + '<button class="btn btn-danger btn-sm" data-act="borrowDelPwd" data-id="'+b.id+'" style="color:#fff;background:#dc2626;border-color:#dc2626">删除此借用记录（需管理密码）</button>'
+      + '<div class="muted" style="margin-top:6px">历史借用记录仅可新增与编辑，不可直接删除；如确需删除须输入管理密码，以保证可追溯。</div></div>' : '');
+}
+function borrowSubmit(id){
+  if(!v('b_dev')){ toast('请选择借用设备'); return false; }
+  if(!v('b_person')){ toast('借用人必填'); return false; }
+  if(!v('b_expect')){ toast('预计归还日期必填'); return false; }
+  var obj = { devId:v('b_dev'), person:v('b_person'), dept:v('b_dept'), outDate:v('b_out')||today(), expectDate:v('b_expect'), purpose:v('b_purpose'), remark:v('b_remark') };
+  if(id){
+    var b = DB.borrows.filter(function(x){return x.id===id;})[0];
+    if(b){ for(var k in obj) b[k]=obj[k]; }
+  } else {
+    obj.id = uid('br'); obj.inDate='';
+    DB.borrows.unshift(obj);
+  }
+  save(); render(); toast(id?'借用记录已更新':'借用登记成功');
+  return true;
+}
+function borrowReturn(id){
+  var b = DB.borrows.filter(function(x){return x.id===id;})[0];
+  if(!b) return;
+  openConfirm('登记归还','确认将「'+esc(devLabel(b.devId))+'」借给「'+esc(b.person)+'」的记录标记为已归还（'+today()+'）？', function(){
+    b.inDate = today();
+    save(); render(); toast('已登记归还');
+  });
+}
+function borrowReportRows(){
+  var dm = devMap();
+  return DB.borrows.slice().sort(function(a,b){ return (b.outDate||'').localeCompare(a.outDate||''); }).map(function(b){
+    var d = dm[b.devId]||{};
+    return [b.person||'', b.dept||'', d.code||'', d.name||'', b.outDate||'', b.expectDate||'', b.inDate||'', borrowStatus(b), b.purpose||'', b.remark||''];
+  });
+}
+function viewBorrowReport(){
+  var H=['借用人','借用部门','资产编号','设备名称','借出日期','预计归还','实际归还','状态','用途','备注'];
+  var R=borrowReportRows();
+  var head=H.map(function(h){return '<th>'+h+'</th>';}).join('');
+  var body=R.length ? R.map(function(r){ return '<tr>'+r.map(function(c){return '<td>'+esc((c===''||c==null)?'':c)+'</td>';}).join('')+'</tr>'; }).join('')
+                   : '<tr><td colspan="'+H.length+'">暂无记录</td></tr>';
+  openModal({ title:'设备借用明细报表（共 '+R.length+' 条）', narrow:false, okText:'打印', onOk:function(){ window.print(); },
+    body:'<div class="muted" style="margin-bottom:8px">报表含设备台账主数据 + 借用字段，账实对应；点击「打印」可输出或存为 PDF。</div>'
+      +'<div style="overflow-x:auto;max-height:62vh"><table><thead><tr>'+head+'</tr></thead><tbody>'+body+'</tbody></table></div>' });
+}
+function exportBorrowReport(){
+  var H=['借用人','借用部门','资产编号','设备名称','借出日期','预计归还','实际归还','状态','用途','备注'];
+  var R=borrowReportRows();
+  downloadCSV('设备借用明细报表_'+today().replace(/-/g,'')+'.csv', H, R);
+  toast('已导出设备借用明细报表（'+R.length+' 条）');
+}
+
+/* ======================= 模块4：统计分析看板（内联 SVG / CSS 绘图） ======================= */
+var PALETTE = ['#0d9488','#0891b2','#14b8a6','#0e7490','#22d3ee','#f59e0b','#ef4444','#8b5cf6','#64748b','#84cc16'];
+
+function pieSVG(data){   // data: [{label, value}]
+  var total = data.reduce(function(s,x){return s+x.value;},0);
+  if(!total) return '<div class="empty">'+ICON.empty+'暂无数据</div>';
+  var cx=100, cy=100, r=80, acc=0, paths='';
+  if(data.length===1){
+    paths = '<circle cx="100" cy="100" r="80" fill="'+(data[0].color||PALETTE[0])+'"></circle>';
+  }else{
+    data.forEach(function(x,i){
+      var a0 = acc/total*360, a1 = (acc+x.value)/total*360; acc+=x.value;
+      paths += '<path d="'+arcPath(cx,cy,r,a0,a1)+'" fill="'+(x.color||PALETTE[i%PALETTE.length])+'" stroke="#fff" stroke-width="1.5"></path>';
+    });
+  }
+  var legend = data.map(function(x,i){
+    var pct = (x.value/total*100).toFixed(1);
+    return '<div><i style="background:'+(x.color||PALETTE[i%PALETTE.length])+'"></i>'+esc(x.label)+' <b>'+x.value+'</b> <span class="muted">'+pct+'%</span></div>';
+  }).join('');
+  return '<div class="pie-box">'
+    + '<svg viewBox="0 0 200 200" style="width:180px;height:180px;flex:none">'+paths
+    + '<circle cx="100" cy="100" r="42" fill="#fff"></circle>'
+    + '<text x="100" y="95" text-anchor="middle" font-size="12" fill="#6b7280">总台数</text>'
+    + '<text x="100" y="116" text-anchor="middle" font-size="20" font-weight="700" fill="#0f766e">'+total+'</text>'
+    + '</svg><div class="legend">'+legend+'</div></div>';
+}
+function arcPath(cx,cy,r,a0,a1){
+  var p0=polar(cx,cy,r,a0), p1=polar(cx,cy,r,a1);
+  var large = (a1-a0)>180 ? 1 : 0;
+  return 'M '+cx+' '+cy+' L '+p0.x.toFixed(2)+' '+p0.y.toFixed(2)+' A '+r+' '+r+' 0 '+large+' 1 '+p1.x.toFixed(2)+' '+p1.y.toFixed(2)+' Z';
+}
+function polar(cx,cy,r,deg){ var a=(deg-90)*Math.PI/180; return {x:cx+r*Math.cos(a), y:cy+r*Math.sin(a)}; }
+
+function hBars(data){    // 纯 CSS 水平柱状图，长标签也能看清
+  if(!data.length) return '<div class="empty">'+ICON.empty+'暂无数据</div>';
+  var max = Math.max.apply(null, data.map(function(x){return x.value;})) || 1;
+  return data.map(function(x){
+    var w = Math.max(2, x.value/max*100);
+    return '<div class="bar-row"><div class="bar-top"><span>'+esc(x.label)+'</span><b>'+x.value+' 台</b></div>'
+         + '<div class="bar-bg"><div class="bar-fill" style="width:'+w+'%"></div></div></div>';
+  }).join('');
+}
+function vBarSVG(data){  // 内联 SVG 竖直柱状图（工单状态）
+  var max = Math.max.apply(null, data.map(function(x){return x.value;})) || 1;
+  var W=340, H=200, pad=30, bw=44, gap=(W-pad*2-bw*data.length)/(data.length+1);
+  var bars='';
+  data.forEach(function(x,i){
+    var h = x.value/max*(H-70);
+    var bx = pad+gap*(i+1)+bw*i, by = H-34-h;
+    bars += '<rect x="'+bx.toFixed(1)+'" y="'+by.toFixed(1)+'" width="'+bw+'" height="'+Math.max(h,1).toFixed(1)+'" rx="5" fill="'+x.color+'"></rect>'
+         +  '<text x="'+(bx+bw/2).toFixed(1)+'" y="'+(by-7).toFixed(1)+'" text-anchor="middle" font-size="13" font-weight="700" fill="#374151">'+x.value+'</text>'
+         +  '<text x="'+(bx+bw/2).toFixed(1)+'" y="'+(H-14)+'" text-anchor="middle" font-size="12" fill="#6b7280">'+esc(x.label)+'</text>';
+  });
+  return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:420px;height:auto">'
+    + '<line x1="'+pad+'" y1="'+(H-34)+'" x2="'+(W-pad+10)+'" y2="'+(H-34)+'" stroke="#e5e7eb"></line>'
+    + bars + '</svg>';
+}
+function renderDash(){
+  var devs = DB.devices;
+  var byCat={}, byLoc={};
+  devs.forEach(function(d){
+    byCat[d.cat||'未分类'] = (byCat[d.cat||'未分类']||0) + 1;
+    byLoc[d.loc||'未填写'] = (byLoc[d.loc||'未填写']||0) + 1;
+  });
+  var catData = Object.keys(byCat).map(function(k){return {label:k,value:byCat[k]};}).sort(function(a,b){return b.value-a.value;});
+  var locData = Object.keys(byLoc).map(function(k){return {label:k,value:byLoc[k]};}).sort(function(a,b){return b.value-a.value;});
+  var byDept={}, byManager={};
+  devs.forEach(function(d){
+    byDept[d.dept||'未登记部门'] = (byDept[d.dept||'未登记部门']||0) + 1;
+    byManager[d.manager||'未登记责任人'] = (byManager[d.manager||'未登记责任人']||0) + 1;
+  });
+  var deptData = Object.keys(byDept).map(function(k){return {label:k,value:byDept[k]};}).sort(function(a,b){return b.value-a.value;});
+  var managerData = Object.keys(byManager).map(function(k){return {label:k,value:byManager[k]};}).sort(function(a,b){return b.value-a.value;});
+  var unmanaged = devs.filter(function(d){ return !d.manager && !d.dept; }).length;
+  var stColors={'在用':'#0d9488','闲置':'#0ea5e9','故障':'#dc2626','已损坏':'#334155','已出库':'#94a3b8','报废':'#6d28d9'};
+  var stData2 = STATUS_DEV.map(function(s){ return {label:s, value:cntStatus(s), color:stColors[s]}; }).filter(function(x){ return x.value>0; });
+  var stColor={'待处理':'#dc2626','维修中':'#ea580c','已修复':'#0d9488','报废':'#94a3b8'};
+  var stData = REPAIR_STATUS.map(function(s){
+    return {label:s, value:DB.repairs.filter(function(r){return r.status===s;}).length, color:stColor[s]};
+  });
+
+  $('view').innerHTML =
+    '<div class="kpis">'
+    + kpi('设备总数', DB.devices.length, '台', 'k-teal')
+    + kpi('在用数量', cntStatus('在用'), '台', 'k-gray')
+    + kpi('闲置数量', cntStatus('闲置'), '台', 'k-blue')
+    + kpi('故障数量', cntStatus('故障'), '台', 'k-red')
+    + kpi('已损坏数量', cntStatus('已损坏'), '台', 'k-dark')
+    + kpi('报废数量', cntStatus('报废'), '台', 'k-scrap')
+    + kpi('即将过保(60天)', warnDevices().length, '项', 'k-orange')
+    + kpi('借出中', pendingBorrows().length - overdueBorrows().length, '笔', 'k-orange')
+    + kpi('逾期', overdueBorrows().length, '笔', 'k-red')
+    + '</div>'
+    + '<div class="chart-wrap">'
+    +   '<div class="card"><div class="card-hd"><h2>各类别设备数量占比</h2></div><div class="card-bd">'+pieSVG(catData)+'</div></div>'
+    +   '<div class="card"><div class="card-hd"><h2>各存放位置设备分布</h2></div><div class="card-bd">'+hBars(locData)+'</div></div>'
+    +   '<div class="card"><div class="card-hd"><h2>设备状态分布</h2></div><div class="card-bd">'+pieSVG(stData2)+'</div></div>'
+    + '</div>'
+    + '<div class="chart-wrap">'
+    +   '<div class="card"><div class="card-hd"><h2>按管理部门分布</h2></div><div class="card-bd">'+hBars(deptData)+'</div></div>'
+    +   '<div class="card"><div class="card-hd"><h2>按保管责任人分布</h2></div><div class="card-bd">'+hBars(managerData)
+    +     (unmanaged? '<div class="muted" style="margin-top:10px;color:var(--danger)">注意：'+unmanaged+' 台设备未登记责任人与部门，建议在台账中补全以便清查。</div>' : '')
+    +     '<div class="muted" style="margin-top:6px">台账责任人为长期保管人，与「设备借用登记」中的临时借用人不同。</div>'
+    +   '</div></div>'
+    + '</div>'
+    + '<div class="chart-wrap">'
+    +   '<div class="card"><div class="card-hd"><h2>维修工单状态分布</h2></div><div class="card-bd" style="text-align:center">'+vBarSVG(stData)+'</div></div>'
+    +   '<div class="card"><div class="card-hd"><h2>数据概况</h2></div><div class="card-bd">'
+    +     '<div class="bar-row"><div class="bar-top"><span>设备台账记录</span><b>'+DB.devices.length+' 条</b></div><div class="bar-bg"><div class="bar-fill" style="width:100%"></div></div></div>'
+    +     '<div class="bar-row"><div class="bar-top"><span>出入库流水</span><b>'+DB.flows.length+' 条</b></div><div class="bar-bg"><div class="bar-fill" style="width:'+Math.min(100,DB.flows.length*5)+'%"></div></div></div>'
+    +     '<div class="bar-row"><div class="bar-top"><span>维修工单</span><b>'+DB.repairs.length+' 条</b></div><div class="bar-bg"><div class="bar-fill" style="width:'+Math.min(100,DB.repairs.length*5)+'%"></div></div></div>'
+    +     '<div class="bar-row"><div class="bar-top"><span>累计维修花费</span><b>¥'+sum(DB.repairs,'cost')+'</b></div><div class="bar-bg"><div class="bar-fill" style="width:'+Math.min(100,sum(DB.repairs,'cost')/50)+'%"></div></div></div>'
+    +     '<div class="muted" style="margin-top:10px">数据全部保存在本机浏览器（localStorage），未上传任何服务器。建议定期点击右上角「导出备份」留存。</div>'
+    +   '</div></div>'
+    + '</div>';
+}
+
+/* ======================= 弹窗 ======================= */
+function openModal(opt){
+  var host=$('modalHost');
+  host.innerHTML = '<div class="mask" id="mask"><div class="modal'+(opt.narrow?' narrow':'')+'">'
+    + '<div class="modal-hd"><span>'+esc(opt.title)+'</span><button type="button" data-act="closeModal">&times;</button></div>'
+    + '<div class="modal-bd">'+opt.body+'</div>'
+    + '<div class="modal-ft"><button class="btn btn-line" data-act="closeModal">取消</button>'
+    + '<button class="btn '+(opt.danger?'btn-danger':'btn-primary')+'" id="modalOk">'+esc(opt.okText||'保存')+'</button></div>'
+    + '</div></div>';
+  $('modalOk').onclick = function(){
+    var r = opt.onOk ? opt.onOk() : true;
+    if(r!==false) closeModal();
+  };
+  $('mask').addEventListener('mousedown', function(e){ if(e.target.id==='mask') closeModal(); });
+}
+function closeModal(){ $('modalHost').innerHTML=''; }
+function openConfirm(title, html, onOk, onCancel){
+  openModal({ title:title, narrow:true, danger:true, okText:'确认', body:'<div style="font-size:14px;line-height:1.7">'+html+'</div>',
+    onOk:function(){ onOk&&onOk(); } });
+  var c = document.querySelectorAll('[data-act="closeModal"]');
+  if(onCancel){ for(var i=0;i<c.length;i++) c[i].addEventListener('click', onCancel); }
+}
+
+/* ======================= 导出 / 导入 / 清空 ======================= */
+function doExport(){
+  var data = JSON.stringify(DB, null, 2);
+  var blob = new Blob([data], {type:'text/plain'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '学校留存周转设备备份_' + today().replace(/-/g,'') + '.txt';
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  toast('备份文件已导出，请妥善保存');
+}
+function importFromObject(obj){
+  if(!obj || (!obj.devices && !obj.flows && !obj.repairs && !obj.borrows)){ toast('文件格式不正确，缺少设备/流水/工单/借用数据'); return; }
+  var c = (obj.devices||[]).length + (obj.flows||[]).length + (obj.repairs||[]).length + (obj.borrows||[]).length;
+  openModal({
+    title:'导入数据', narrow:true, okText:'覆盖导入',
+    body:'<div style="line-height:1.8">备份文件包含：<br>设备 <b>'+(obj.devices||[]).length+'</b> 条 / 出入库 <b>'+(obj.flows||[]).length+'</b> 条 / 工单 <b>'+(obj.repairs||[]).length+'</b> 条 / 借用 <b>'+(obj.borrows||[]).length+'</b> 条，共 '+c+' 条。<br><br>'
+      + '<span style="color:var(--danger)">覆盖导入会替换当前全部数据</span>，也可以选择「追加合并」保留现有数据。</div>'
+      + '<div style="margin-top:12px"><button class="btn btn-line btn-sm" id="mergeBtn">追加合并（不删除现有数据）</button></div>',
+    onOk:function(){
+      DB = { devices:obj.devices||[], flows:obj.flows||[], repairs:obj.repairs||[], borrows:obj.borrows||[], meta:obj.meta||{} };
+      save(); render(); toast('已覆盖导入 '+c+' 条数据');
+    }
+  });
+  $('mergeBtn').onclick = function(){
+    var ids = {};
+    DB.devices.concat(DB.flows, DB.repairs, DB.borrows).forEach(function(x){ ids[x.id]=1; });
+    var add=0;
+    ['devices','flows','repairs','borrows'].forEach(function(k){
+      (obj[k]||[]).forEach(function(x){ if(!ids[x.id]){ DB[k].push(x); add++; } });
+    });
+    save(); closeModal(); render(); toast('已追加合并 '+add+' 条新数据');
+  };
+}
+function doImport(file){
+  var fr = new FileReader();
+  fr.onload = function(){
+    var obj;
+    try{ obj = JSON.parse(fr.result); }
+    catch(e){ toast('文件解析失败：内容不是有效的备份数据'); return; }
+    importFromObject(obj);
+  };
+  fr.readAsText(file, 'utf-8');
+}
+
+/* ======================= Excel(CSV) 导出 / 导入 ======================= */
+/* 纯前端手写，零外部依赖。导出为带 BOM 的 UTF-8 CSV，Excel/WPS 双击即开。
+   三个模块分别导出为独立 CSV 文件；导入时按表头自动识别类型并「追加」（不删除现有数据）。 */
+var CSV_MAP = {
+  devices:{ '设备名称':'name','设备型号':'model','资产编号':'code','设备类别':'cat','存放位置':'loc','使用状态':'status','管理人员':'manager','管理部门':'dept','机器编号':'machineNo','机器序列号':'serial','采购日期':'buyDate','质保到期':'warranty','供应商':'supplier','备注':'remark' },
+  flows:{ '类型':'type','关联设备编号':'devCode','关联设备名称':'devName','数量':'qty','时间':'time','经办人':'person','领用部门':'dept','归还状态':'ret','来源说明':'source','机器编号':'machineNo','机器序列号':'serial','用途':'purpose','备注':'remark' },
+  repairs:{ '工单号':'id','关联设备编号':'devCode','关联设备名称':'devName','报修时间':'time','故障描述':'desc','报修人':'reporter','维修状态':'status','维修人员':'worker','维修结果':'result','维修花费':'cost','备注':'remark' },
+  borrows:{ '借用人':'person','借用部门':'dept','资产编号':'devCode','设备名称':'devName','借出日期':'outDate','预计归还':'expectDate','实际归还':'inDate','状态':'status','用途':'purpose','备注':'remark' }
+};
+var TYPE_NAME = { devices:'设备台账', flows:'出入库流水', repairs:'维修工单' };
+function csvCell(v){ if(v===null||v===undefined) v=''; v=String(v); if(/[",\r\n]/.test(v)) v='"'+v.replace(/"/g,'""')+'"'; return v; }
+function csvNum(v){ var x=parseFloat(v); return isNaN(x)?0:x; }
+function devMap(){ var m={}; DB.devices.forEach(function(d){ m[d.id]=d; }); return m; }
+function downloadCSV(name, headers, rows){
+  var lines=[headers.join(',')];
+  rows.forEach(function(r){ lines.push(r.map(csvCell).join(',')); });
+  var blob=new Blob(['﻿'+lines.join('\r\n')], {type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 600);
+}
+function exportCSV(){
+  var dm=devMap();
+  var dH=['设备名称','设备型号','资产编号','设备类别','存放位置','使用状态','管理人员','管理部门','机器编号','机器序列号','采购日期','质保到期','供应商','备注'];
+  var dR=DB.devices.map(function(d){ return [d.name,d.model,d.code,d.cat,d.loc,d.status,d.manager,d.dept,d.machineNo,d.serial,d.buyDate,d.warranty,d.supplier,d.remark]; });
+  var fH=['类型','关联设备编号','关联设备名称','数量','时间','经办人','领用部门','归还状态','来源说明','机器编号','机器序列号','用途','备注'];
+  var fR=DB.flows.map(function(f){ var d=dm[f.devId]||{}; return [f.type==='in'?'入库':'出库', d.code||'', d.name||'', f.qty, f.time, f.person, f.dept, f.ret||'', f.source, f.machineNo||'', f.serial||'', f.purpose||'', f.remark]; });
+  var rH=['工单号','关联设备编号','关联设备名称','报修时间','故障描述','报修人','维修状态','维修人员','维修结果','维修花费','备注'];
+  var rR=DB.repairs.map(function(r){ var d=dm[r.devId]||{}; return [r.id, d.code||'', d.name||'', r.time, r.desc, r.reporter, r.status, r.worker, r.result, r.cost, r.remark]; });
+  var bH=['借用人','借用部门','资产编号','设备名称','借出日期','预计归还','实际归还','状态','用途','备注'];
+  var bR=DB.borrows.map(function(b){ var d=dm[b.devId]||{}; return [b.person, b.dept, d.code||'', d.name||'', b.outDate, b.expectDate, b.inDate, borrowStatus(b), b.purpose, b.remark]; });
+  var ts=today().replace(/-/g,'');
+  downloadCSV('设备台账_'+ts+'.csv', dH, dR);
+  downloadCSV('出入库流水_'+ts+'.csv', fH, fR);
+  downloadCSV('维修工单_'+ts+'.csv', rH, rR);
+  downloadCSV('设备借用_'+ts+'.csv', bH, bR);
+  toast('已导出 4 个 CSV（设备/流水/工单/借用），Excel 可直接打开');
+}
+/* 单模块导出：在对应模块页内点「导出…表」时调用，只导该模块 */
+function exportOne(type){
+  var dm=devMap(), ts=today().replace(/-/g,'');
+  if(type==='devices'){
+    var dH=['设备名称','设备型号','资产编号','设备类别','存放位置','使用状态','管理人员','管理部门','机器编号','机器序列号','采购日期','质保到期','供应商','备注'];
+    var dR=DB.devices.map(function(d){ return [d.name,d.model,d.code,d.cat,d.loc,d.status,d.manager,d.dept,d.machineNo,d.serial,d.buyDate,d.warranty,d.supplier,d.remark]; });
+    downloadCSV('设备资产表_'+ts+'.csv', dH, dR);
+    toast('已导出资产表 CSV（'+DB.devices.length+' 台）');
+  } else if(type==='flows'){
+    var fH=['类型','关联设备编号','关联设备名称','数量','时间','经办人','领用部门','归还状态','来源说明','机器编号','机器序列号','用途','备注'];
+    var fR=DB.flows.map(function(f){ var d=dm[f.devId]||{}; return [f.type==='in'?'入库':'出库', d.code||'', d.name||'', f.qty, f.time, f.person, f.dept, f.ret||'', f.source, f.machineNo||'', f.serial||'', f.purpose||'', f.remark]; });
+    downloadCSV('出入库流水_'+ts+'.csv', fH, fR);
+    toast('已导出出入库流水 CSV（'+DB.flows.length+' 条）');
+  } else if(type==='repairs'){
+    var rH2=['工单号','关联设备编号','关联设备名称','报修时间','故障描述','报修人','维修状态','维修人员','维修结果','维修花费','备注'];
+    var rR2=DB.repairs.map(function(r){ var d=dm[r.devId]||{}; return [r.id, d.code||'', d.name||'', r.time, r.desc, r.reporter, r.status, r.worker, r.result, r.cost, r.remark]; });
+    downloadCSV('维修工单_'+ts+'.csv', rH2, rR2);
+    toast('已导出维修工单 CSV（'+DB.repairs.length+' 张）');
+  } else if(type==='borrows'){
+    var bH2=['借用人','借用部门','资产编号','设备名称','借出日期','预计归还','实际归还','状态','用途','备注'];
+    var bR2=DB.borrows.map(function(b){ var d=dm[b.devId]||{}; return [b.person, b.dept, d.code||'', d.name||'', b.outDate, b.expectDate, b.inDate, borrowStatus(b), b.purpose, b.remark]; });
+    downloadCSV('设备借用_'+ts+'.csv', bH2, bR2);
+    toast('已导出设备借用 CSV（'+DB.borrows.length+' 笔）');
+  }
+}
+function parseCSV(text){
+  if(text.charCodeAt(0)===0xFEFF) text=text.slice(1); // 去 UTF-8 BOM
+  var rows=[], row=[], field='', q=false;
+  for(var i=0;i<text.length;i++){
+    var c=text[i];
+    if(q){
+      if(c==='"'){ if(text[i+1]==='"'){ field+='"'; i++; } else q=false; }
+      else field+=c;
+    } else {
+      if(c==='"') q=true;
+      else if(c===','){ row.push(field); field=''; }
+      else if(c==='\r'){ /* skip */ }
+      else if(c==='\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+      else field+=c;
+    }
+  }
+  if(field!==''||row.length){ row.push(field); rows.push(row); }
+  return rows.filter(function(r){ return r.length>1 || (r.length===1 && r[0].trim()!==''); });
+}
+function detectCSVType(head){
+  var h=head.join('|');
+  if(h.indexOf('预计归还')>=0||h.indexOf('借用人')>=0) return 'borrows';
+  if(h.indexOf('报修时间')>=0||h.indexOf('故障描述')>=0||h.indexOf('维修状态')>=0) return 'repairs';
+  if(h.indexOf('经办人')>=0||h.indexOf('领用部门')>=0||h.indexOf('归还状态')>=0||h.indexOf('入库')>=0||h.indexOf('出库')>=0) return 'flows';
+  if(h.indexOf('使用状态')>=0||h.indexOf('资产编号')>=0||h.indexOf('质保到期')>=0) return 'devices';
+  return null;
+}
+function doImportCSV(file, forceType){
+  var fr=new FileReader();
+  fr.onload=function(){
+    var rows=parseCSV(fr.result||'');
+    if(rows.length<2){ toast('CSV 内容为空或只有表头'); return; }
+    var head=rows[0].map(function(h){ return h.trim(); });
+    var type=forceType||detectCSVType(head);
+    if(!type){ toast('无法识别该 CSV 类型：请使用本工具导出的格式（表头含「资产编号/使用状态」或「经办人/归还状态」或「报修时间」）'); return; }
+    var map=CSV_MAP[type], idx={};
+    head.forEach(function(h,i){ if(map[h]!=null) idx[map[h]]=i; });
+    var dm=devMap(), added=0, skipped=0;
+    if(type==='devices'){
+      var seen={}; DB.devices.forEach(function(d){ seen[d.code]=1; });
+      rows.slice(1).forEach(function(r){
+        var code=(r[idx.code]||'').trim();
+        if(!code||seen[code]){ skipped++; return; }
+        seen[code]=1;
+        DB.devices.push({id:uid('dev'),seed:false,name:r[idx.name]||'',model:r[idx.model]||'',code:code,cat:r[idx.cat]||'',loc:r[idx.loc]||'',status:(r[idx.status]||'在用'),manager:r[idx.manager]||'',dept:r[idx.dept]||'',machineNo:r[idx.machineNo]||'',serial:r[idx.serial]||'',buyDate:r[idx.buyDate]||'',warranty:r[idx.warranty]||'',supplier:r[idx.supplier]||'',remark:r[idx.remark]||''});
+        added++;
+      });
+    } else if(type==='flows'){
+      rows.slice(1).forEach(function(r){
+        var dc=(r[idx.devCode]||'').trim(), devId='';
+        for(var k in dm){ if(dm[k].code===dc){ devId=k; break; } }
+        var tp=(r[idx.type]||'').indexOf('出')>=0?'out':'in';
+        DB.flows.push({id:uid('fl'),seed:false,type:tp,devId:devId,qty:csvNum(r[idx.qty]),time:r[idx.time]||'',person:r[idx.person]||'',dept:r[idx.dept]||'',source:r[idx.source]||'',ret:r[idx.ret]||'',machineNo:r[idx.machineNo]||'',serial:r[idx.serial]||'',purpose:r[idx.purpose]||'',remark:r[idx.remark]||''});
+        added++;
+      });
+    } else if(type==='repairs'){
+      var seenId={}; DB.repairs.forEach(function(x){ seenId[x.id]=1; });
+      rows.slice(1).forEach(function(r){
+        var rid=(r[idx.id]||'').trim();
+        if(seenId[rid]){ skipped++; return; }
+        if(rid) seenId[rid]=1; else rid=uid('rp');
+        var dc=(r[idx.devCode]||'').trim(), devId='';
+        for(var k in dm){ if(dm[k].code===dc){ devId=k; break; } }
+        DB.repairs.push({id:rid,seed:false,devId:devId,time:r[idx.time]||'',desc:r[idx.desc]||'',reporter:r[idx.reporter]||'',status:r[idx.status]||'待处理',worker:r[idx.worker]||'',result:r[idx.result]||'',cost:csvNum(r[idx.cost]),remark:r[idx.remark]||''});
+        added++;
+      });
+    } else if(type==='borrows'){
+      rows.slice(1).forEach(function(r){
+        var dc=(r[idx.devCode]||'').trim(), devId='';
+        for(var k in dm){ if(dm[k].code===dc){ devId=k; break; } }
+        DB.borrows.push({id:uid('br'),seed:false,devId:devId,person:r[idx.person]||'',dept:r[idx.dept]||'',outDate:r[idx.outDate]||'',expectDate:r[idx.expectDate]||'',inDate:r[idx.inDate]||'',purpose:r[idx.purpose]||'',remark:r[idx.remark]||''});
+        added++;
+      });
+    }
+    if(added===0){ toast('导入完成：'+skipped+' 行因编号重复/缺失被跳过，无新增'); save(); render(); return; }
+    openModal({ title:'导入 CSV 确认', narrow:true, okText:'确认追加',
+      body:'识别为【'+TYPE_NAME[type]+'】数据，将<b>追加</b>到当前工作台：<br><br>新增 <b>'+added+'</b> 条'
+        +(skipped?('，跳过 <b>'+skipped+'</b> 条（编号重复/缺失）'):'')
+        +'<br><br><span style="color:var(--muted)">CSV 导入为追加模式，不会删除现有数据；如需整体替换请用「导入数据文件(JSON)」。</span>',
+      onOk:function(){ save(); render(); toast('已追加导入 '+added+' 条（'+TYPE_NAME[type]+'）'); } });
+  };
+  fr.readAsText(file, 'utf-8');
+}
+
+/* 管理密码验证弹窗：删除出入库/借用流水时调用，输入正确才执行回调 */
+function askAdminPwd(onPass, title){
+  openModal({
+    title: title||'管理密码验证', narrow:true, danger:true, okText:'确认删除',
+    body:'<div style="margin-bottom:10px">该删除操作不可恢复，请输入管理密码以继续：</div>'
+      + '<input id="pwdInput" type="password" class="inp" placeholder="请输入管理密码" style="font-size:16px;width:100%">'
+      + '<div id="pwdHint" class="muted" style="margin-top:6px;color:#dc2626;min-height:18px"></div>',
+    onOk:function(){
+      if(v('pwdInput')!==ADMIN_PWD){ var h=$('pwdHint'); if(h) h.textContent='管理密码错误，已取消本次删除'; var el=$('pwdInput'); if(el) el.focus(); return false; }
+      onPass&&onPass();
+      return true;
+    }
+  });
+  setTimeout(function(){ var el=$('pwdInput'); if(el) el.focus(); }, 60);
+}
+function flowDelPwd(id){
+  var f = DB.flows.filter(function(x){return x.id===id;})[0];
+  if(!f) return;
+  askAdminPwd(function(){
+    var _dev = f.devId;
+    DB.flows = DB.flows.filter(function(x){return x.id!==id;});
+    recalcDevStatus(_dev);
+    save(); closeModal(); render(); toast('出入库记录已删除，设备状态已按流水重新核算');
+  }, '删除出入库记录');
+}
+function borrowDelPwd(id){
+  var b = DB.borrows.filter(function(x){return x.id===id;})[0];
+  if(!b) return;
+  askAdminPwd(function(){
+    DB.borrows = DB.borrows.filter(function(x){return x.id!==id;});
+    save(); closeModal(); render(); toast('借用记录已删除');
+  }, '删除借用记录');
+}
+function wipeAll(){
+  var total = DB.devices.length + DB.flows.length + DB.repairs.length + DB.borrows.length;
+  if(total===0){
+    openConfirm('清空全部数据', '当前没有任何数据，确认清空？', function(){
+      DB = { devices:[], flows:[], repairs:[], borrows:[], meta:{createdAt:nowStr(), tipAt:0} };
+      save(); render(); toast('全部数据已清空');
+    });
+    return;
+  }
+  openModal({
+    title:'清空全部数据（需先备份）', danger:true, okText:'确认清空',
+    body:'<div style="line-height:1.7">'
+      +'<p style="margin:0 0 8px">将删除本机保存的<b>全部</b>数据（设备台账、出入库流水、维修工单、借用记录），<span style="color:var(--danger)">清空后无法恢复</span>。</p>'
+      +'<p style="margin:0 0 10px">为防止误删或清理浏览器导致数据<b>永久丢失</b>，系统要求清空前<b>必须先备一份</b>：</p>'
+      +'<div style="margin:0 0 12px"><button class="btn btn-primary" id="wipeBackupBtn" type="button">① 导出备份 (JSON)</button>'
+      +'<span id="wipeBackupState" class="muted" style="margin-left:10px" data-done="0">尚未备份</span></div>'
+      +'<label style="display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:14px"><input type="checkbox" id="wipeSkip"> 我已单独备份过，可跳过导出</label>'
+      +'<input type="text" id="wipeType" class="inp" placeholder=\'请输入「确认清空」四个字\' style="font-size:16px;width:100%">'
+      +'</div>',
+    onOk:function(){
+      var skip = $('wipeSkip') && $('wipeSkip').checked;
+      var okBackup = $('wipeBackupState') && $('wipeBackupState').getAttribute('data-done')==='1';
+      if(!skip && !okBackup){ toast('请先点「① 导出备份」，或勾选「我已单独备份过」'); return false; }
+      if(($('wipeType').value||'').trim() !== '确认清空'){ toast('请在输入框输入「确认清空」四个字'); return false; }
+      DB = { devices:[], flows:[], repairs:[], borrows:[], meta:{createdAt:nowStr(), tipAt:0} };
+      save(); render(); toast('全部数据已清空');
+    }
+  });
+  var bb = $('wipeBackupBtn');
+  if(bb) bb.onclick = function(){
+    doExport();
+    var st = $('wipeBackupState');
+    st.textContent = '✓ 已导出备份'; st.setAttribute('data-done','1'); st.style.color = 'var(--ok)';
+    bb.disabled = true; bb.textContent = '① 已备份';
+  };
+}
+
+/* ======================= IMA 知识库备份（由小台代存） ======================= */
+/* 说明：IMA 接口不开放浏览器跨域，纯静态页无法直接调 IMA；故由已接入你 IMA 知识库的
+   小台（WorkBuddy）代你中转：你导出 JSON 发我 → 我存入 IMA；恢复时我取回发你 → 你导入。
+   手动 JSON 导出/导入始终可用。 */
+function copyText(str){
+  function fb(){
+    var ta=document.createElement('textarea'); ta.value=str; ta.style.position='fixed'; ta.style.top='-9999px';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    var ok=false; try{ ok=document.execCommand('copy'); }catch(e){ ok=false; } ta.remove(); return ok;
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(str).then(function(){ toast('已复制备份内容，发给小台即可存入 IMA'); },
+      function(){ if(fb()) toast('已复制备份内容，发给小台即可存入 IMA'); else toast('复制失败，请手动选择文本复制'); });
+  } else { if(fb()) toast('已复制备份内容，发给小台即可存入 IMA'); else toast('复制失败，请手动选择文本复制'); }
+}
+function imaBackup(){
+  var json = JSON.stringify(DB, null, 2);
+  var total = DB.devices.length + DB.flows.length + DB.repairs.length + DB.borrows.length;
+  var safe = json.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  openModal({
+    title:'IMA 知识库 · 云端保险',
+    okText:'关闭',
+    body:'<div style="line-height:1.7">'
+      +'<p style="margin:0 0 10px">把所有数据备份到你的 <b>IMA 知识库</b>（由已接入你 IMA 的小台代存）。换手机 / 清浏览器后，找我要回即可还原。当前共 <b>'+total+'</b> 条数据。</p>'
+      +'<div style="font-size:13px;color:var(--muted);margin:0 0 6px"><b>① 备份到 IMA 云</b></div>'
+      +'<textarea id="imaJson" readonly class="inp" style="width:100%;height:150px;font-family:monospace;font-size:12px">'+safe+'</textarea>'
+      +'<div style="margin:8px 0 14px;display:flex;gap:8px;flex-wrap:wrap">'
+      +'<button class="btn btn-primary" id="imaCopy" type="button">复制全部内容</button>'
+      +'<button class="btn btn-line" id="imaDl" type="button">下载 .json</button>'
+      +'</div>'
+      +'<div style="font-size:13px;color:var(--muted);margin:0 0 6px"><b>② 从 IMA 云恢复</b>（把小台发给你的 JSON 粘贴到下面）</div>'
+      +'<textarea id="imaPaste" class="inp" placeholder="在此粘贴小台从 IMA 取回的备份 JSON…" style="width:100%;height:110px;font-family:monospace;font-size:12px"></textarea>'
+      +'<div style="margin-top:8px"><button class="btn btn-primary" id="imaRestore" type="button">从粘贴内容恢复</button></div>'
+      +'<p class="muted" style="margin:12px 0 0">流程：点「复制全部内容」→ 发给我（小台）→ 我存入 IMA；恢复时对我喊「从 IMA 恢复」→ 我把 JSON 发回 → 粘贴到上方点恢复。</p>'
+      +'</div>'
+  });
+  var copyBtn=$('imaCopy'); if(copyBtn) copyBtn.onclick=function(){ copyText(json); };
+  var dlBtn=$('imaDl'); if(dlBtn) dlBtn.onclick=function(){ doExport(); };
+  var rsBtn=$('imaRestore'); if(rsBtn) rsBtn.onclick=function(){
+    var t=($('imaPaste').value||'').trim();
+    if(!t){ toast('请先粘贴备份内容'); return; }
+    var obj; try{ obj=JSON.parse(t); }catch(e){ toast('粘贴内容不是有效的 JSON'); return; }
+    importFromObject(obj);
+  };
+}
+function imaDoBackup(){
+  toast('正在备份到 IMA 知识库…');
+  fetch('/api/ima/backup', {
+    method:'POST', cache:'no-store',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ data: DB })
+  }).then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
+    .then(function(res){
+      if(res.ok && res.j && res.j.ok){
+        toast('已备份到 IMA 知识库（笔记：'+(res.j.note_title||'')+'）');
+      } else {
+        toast('IMA 备份失败：' + ((res.j&&res.j.msg)||'未知错误'));
+      }
+    }).catch(function(){ toast('IMA 备份请求失败，请确认代理服务运行中'); });
+}
+function imaOpenSetup(){
+  openModal({
+    title:'配置 IMA 知识库', narrow:true, okText:'保存并备份',
+    body:'<div style="line-height:1.7">在 <a href="https://ima.qq.com/agent-interface" target="_blank" rel="noopener">ima.qq.com/agent-interface</a> 获取 <b>Client ID</b> 与 <b>API Key</b>，填写后仅保存在代理服务端（不会出现在浏览器）。</div>'
+      + '<div style="margin-top:12px"><label class="fl">Client ID</label><input id="imaCid" type="text" placeholder="输入 Client ID" value=""></div>'
+      + '<div style="margin-top:8px"><label class="fl">API Key</label><input id="imaKey" type="password" placeholder="输入 API Key" value=""></div>'
+      + '<div class="muted" style="margin-top:10px">提示：此配置仅在使用本工具的 node 代理服务时生效；纯静态托管下不可用。</div>',
+    onOk:function(){
+      var cid=$('imaCid').value.trim(), key=$('imaKey').value.trim();
+      if(!cid||!key){ toast('请填写 Client ID 与 API Key'); return false; }
+      fetch('/api/ima/setup',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId:cid,apiKey:key})})
+        .then(function(r){ return r.json().then(function(j){return {ok:r.ok,j:j};}); })
+        .then(function(res){
+          if(res.ok && res.j && res.j.ok){ closeModal(); imaDoBackup(); }
+          else { toast('配置失败：'+((res.j&&res.j.msg)||'代理未运行')); }
+        }).catch(function(){ toast('保存失败，代理服务未运行'); });
+      return false; // 异步完成后再关闭弹窗
+    }
+  });
+}
+
+function devSetStatus(id, st){
+  var d = devById(id);
+  if(!d){ return; }
+  if(st==='已出库'){
+    var _hasOut = DB.flows.some(function(f){ return f.type==='out' && f.devId===id; });
+    if(!_hasOut){ toast('未找到该设备的出库（借领用）记录，不能手动设为「已出库」。请先在「出入库登记」中登记出库。'); renderLedger(); return; }
+  }
+  d.status = st;
+  save(); render(); toast('状态已更新为「'+st+'」');
+}
+/* 删除出入库流水后，依据剩余流水重新核算设备「已出库/在用」状态。
+   仅对当前处于这两态的设备生效，不动「闲置/故障/损坏」等手动状态。
+   计算：净出库 = 出库(out)总数 -（被归还的out数 + 入库归还(in)数）；净出库>0 为已出库，否则在用 */
+function recalcDevStatus(devId){
+  var d = devById(devId);
+  if(!d) return;
+  if(d.status!=='已出库' && d.status!=='在用') return;
+  var outN = DB.flows.filter(function(f){ return f.devId===devId && f.type==='out'; }).length;
+  var retByReturn = DB.flows.filter(function(f){ return f.devId===devId && f.type==='out' && f.ret==='已归还'; }).length;
+  var inN = DB.flows.filter(function(f){ return f.devId===devId && f.type==='in'; }).length;
+  var netOut = outN - (retByReturn + inN);
+  d.status = (netOut>0) ? '已出库' : '在用';
+}
+
+/* ======================= 事件委托 ======================= */
+document.addEventListener('click', function(e){
+  var el = e.target.closest ? e.target.closest('[data-act]') : null;
+  if(!el) return;
+  var act = el.getAttribute('data-act');
+  var id = el.getAttribute('data-id');
+
+  if(act==='go'){ PAGE = el.getAttribute('data-page'); render(); }
+  else if(act==='export'){ doExport(); }
+  else if(act==='import'){ $('fileInput').click(); }
+  else if(act==='exportCsv'){ exportCSV(); }
+  else if(act==='importCsv'){ $('csvInput').click(); }
+  else if(act==='imaBackup'){ imaBackup(); }
+  else if(act==='snaps'){ openSnaps(); }
+  else if(act==='snapRestore'){ restoreSnapshot(parseInt(el.getAttribute('data-i'),10)); closeModal(); }
+  else if(act==='snapDel'){ deleteSnapshot(parseInt(el.getAttribute('data-i'),10)); }
+  else if(act==='snapClear'){ clearSnapshots(); }
+  else if(act==='wipeAll'){ wipeAll(); }
+  else if(act==='hideTip'){ DB.meta.tipHidden=true; save(); renderAlerts(); }
+  else if(act==='closeModal'){ closeModal(); }
+  else if(act==='toggleGroup'){ UI.group=!UI.group; renderLedger(); }
+  else if(act==='resetFilter'){ UI.kw=''; UI.cat=''; UI.loc=''; renderLedger(); }
+  else if(act==='devNew'){ openModal({title:'新增设备台账', body:devForm(), onOk:function(){ return devSubmit(null); }}); }
+  else if(act==='devEdit'){ var d=devById(id); openModal({title:'编辑设备 · '+d.code, body:devForm(d), onOk:function(){ return devSubmit(id); }}); }
+  else if(act==='devQuickAdd'){ devQuickSubmit(); }
+  else if(act==='importCsvDevice'){ $('csvDeviceInput').click(); }
+  else if(act==='exportDeviceCsv'){ exportOne('devices'); }
+  else if(act==='devDel'){
+    var dd=devById(id);
+    openConfirm('删除设备','确认删除「'+esc(dd.code+' '+dd.name)+'」？相关出入库与工单记录会保留但显示为已删除。', function(){
+      DB.devices = DB.devices.filter(function(x){return x.id!==id;});
+      save(); closeModal(); render(); toast('设备已删除');
+    });
+  }
+  /* 设备使用状态通过台账列表中的下拉框修改（change 事件处理） */
+  else if(act==='flowNew'){
+    var tp = el.getAttribute('data-type');
+    openModal({title: tp==='in'?'入库登记':'出库领用登记', body:flowForm(tp), onOk:function(){ return flowSubmit(tp); }});
+  }
+  else if(act==='flowReturn'){ flowReturn(id); }
+  else if(act==='flowEdit'){ flowEdit(id); }
+  else if(act==='flowDelPwd'){ flowDelPwd(id); }
+  else if(act==='expFlows'){ exportOne('flows'); }
+  else if(act==='flowReport'){ viewFlowReport(); }
+  else if(act==='flowReportCsv'){ exportFlowReport(); }
+  else if(act==='expRepairs'){ exportOne('repairs'); }
+  else if(act==='rpReport'){ viewRepairReport(); }
+  else if(act==='rpReportCsv'){ exportRepairReport(); }
+  else if(act==='rpNew'){ openModal({title:'新建报修工单', body:rpForm(), onOk:function(){ return rpSubmit(null); }}); }
+  else if(act==='rpEdit'){
+    var r=DB.repairs.filter(function(x){return x.id===id;})[0];
+    openModal({title:'编辑工单', body:rpForm(r), onOk:function(){ return rpSubmit(id); }});
+  }
+  else if(act==='rpFilter'){ UI.repairFilter = el.getAttribute('data-s'); renderRepair(); }
+  else if(act==='borrowNew'){ openModal({title:'新建借用登记', body:borrowForm(), onOk:function(){ return borrowSubmit(null); }}); }
+  else if(act==='borrowEdit'){ var bb=DB.borrows.filter(function(x){return x.id===id;})[0]; openModal({title:'编辑借用记录', body:borrowForm(bb), onOk:function(){ return borrowSubmit(id); }}); }
+  else if(act==='borrowReturn'){ borrowReturn(id); }
+  else if(act==='borrowDelPwd'){ borrowDelPwd(id); }
+  else if(act==='borrowFilter'){ UI.borrowFilter = el.getAttribute('data-s'); renderBorrow(); }
+  else if(act==='borrowReport'){ viewBorrowReport(); }
+  else if(act==='borrowReportCsv'){ exportBorrowReport(); }
+  else if(act==='expBorrows'){ exportOne('borrows'); }
+  else if(act==='calPrev'){ calView.m--; if(calView.m<0){ calView.m=11; calView.y--; } calRefresh(); }
+  else if(act==='calNext'){ calView.m++; if(calView.m>11){ calView.m=0; calView.y++; } calRefresh(); }
+  else if(act==='calDay'){ calDayDetail(el.getAttribute('data-date')); }
+});
+document.addEventListener('change', function(e){
+  var el=e.target;
+  if(el.getAttribute && el.getAttribute('data-act')==='rpStatus'){
+    rpChangeStatus(el.getAttribute('data-id'), el.value);
+  }
+  else if(el.getAttribute && el.getAttribute('data-act')==='devStatus'){
+    devSetStatus(el.getAttribute('data-id'), el.value);
+  }
+});
+$('fileInput').addEventListener('change', function(e){
+  if(e.target.files && e.target.files[0]) doImport(e.target.files[0]);
+  e.target.value='';
+});
+$('csvInput').addEventListener('change', function(e){
+  if(e.target.files && e.target.files[0]) doImportCSV(e.target.files[0]);
+  e.target.value='';
+});
+$('csvDeviceInput').addEventListener('change', function(e){
+  if(e.target.files && e.target.files[0]) doImportCSV(e.target.files[0], 'devices');
+  e.target.value='';
+});
+
+/* ======================= 启动 ======================= */
+load();
+render();
+calRefresh();
+window.addEventListener('resize', calRefresh);
+</script>
+</body>
+</html>
