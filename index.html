@@ -65,36 +65,57 @@ ul{margin:0;padding:0;list-style:none}
 .nav .badge.g{background:#e8e8ed;color:#6e6e73}
 .side-foot{padding:12px;border-top:1px solid var(--line-s);display:flex;flex-direction:column;gap:7px}
 /* ---------- 侧栏待办日历 ---------- */
-.cal{padding:10px 12px 12px;border-top:1px solid var(--line-s);background:#fbfdfd}
-.cal-h{display:flex;align-items:center;gap:4px;margin-bottom:8px}
-.cal-h .m{font-size:13.5px;font-weight:600;color:var(--text)}
-.cal-h button{width:24px;height:24px;border:1px solid var(--line);background:#fff;border-radius:7px;font-size:14px;line-height:1;color:var(--sub);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
-.cal-h button:hover{border-color:var(--teal-b);color:var(--teal)}
-.cal-h .today{margin-left:auto;border:1px solid var(--teal-b);background:var(--teal-l);color:var(--teal);border-radius:7px;height:24px;padding:0 9px;font-size:11.5px;font-weight:700;cursor:pointer}
-.cal-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;margin-bottom:3px}
-.cal-dow span{font-size:10.5px;color:var(--muted)}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
-.cal-d{position:relative;border-radius:7px;padding:3px 0 5px;text-align:center;cursor:pointer;background:#f6f8f8;min-height:30px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;transition:.12s}
-.cal-d:hover{background:#eef6f5}
-.cal-d .dn{font-size:12px;line-height:1;color:var(--sub);font-weight:500}
-.cal-d.done{background:var(--ok-l)}
-.cal-d.done .dn{color:var(--ok);font-weight:700}
-.cal-d.has{background:var(--teal-l)}
-.cal-d.has .dn{color:var(--text);font-weight:600}
-.cal-d.od{background:#fdeaea}
-.cal-d.od .dn{color:#c0392b;font-weight:800}
-.cal-d.today{border:1.5px solid var(--teal);background:var(--teal-l);padding:1.5px 0 5px}
-.cal-d.today .dn{color:var(--teal);font-weight:700}
+.cal{padding:12px 12px 14px;border-top:1px solid var(--line-s);background:rgba(245,245,247,.65);flex-shrink:0}
+.cal-h{display:flex;align-items:center;gap:6px;margin-bottom:10px;min-height:28px}
+.cal-h .m{font-size:13px;font-weight:650;color:var(--text);letter-spacing:-.01em;white-space:nowrap}
+.cal-h button{width:26px;height:26px;border:1px solid var(--line);background:#fff;border-radius:8px;font-size:14px;line-height:1;color:var(--sub);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;flex:0 0 auto}
+.cal-h button:hover{border-color:var(--teal-b);color:var(--teal);background:var(--teal-l)}
+.cal-h .today{margin-left:auto;width:auto;min-width:26px;height:26px;border:1px solid var(--teal-b);background:var(--teal);color:#fff;border-radius:8px;padding:0 8px;font-size:12px;font-weight:650;line-height:1;box-shadow:0 1px 3px rgba(0,113,227,.2)}
+.cal-h .today:hover{background:var(--teal-d);color:#fff;border-color:var(--teal-d)}
+.cal-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;margin-bottom:4px}
+.cal-dow span{font-size:10px;color:var(--muted);font-weight:500;line-height:1.2}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-d{
+  position:relative;border-radius:9px;padding:0;text-align:center;cursor:pointer;
+  background:transparent;aspect-ratio:1/1;min-height:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:background .12s;
+}
+.cal-d:hover{background:rgba(0,0,0,.04)}
+.cal-d .dn{
+  font-size:12px;line-height:1;color:var(--sub);font-weight:500;
+  width:24px;height:24px;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;
+}
+.cal-d.done .dn{color:var(--ok);font-weight:700;background:var(--ok-l)}
+.cal-d.has .dn{color:var(--teal);font-weight:650;background:var(--teal-l)}
+.cal-d.od .dn{color:#c0392b;font-weight:700;background:#fdeaea}
+.cal-d.today .dn{
+  color:#fff;font-weight:700;background:var(--teal);
+  box-shadow:0 1px 4px rgba(0,113,227,.28);
+}
 .cal-d.other{background:transparent;cursor:default}
-.cal-d.other .dn{color:#c2c8cc}
-.cal-d .bar{width:72%;height:4px;border-radius:3px;background:#d8e2e0;margin-top:4px;overflow:hidden}
-.cal-d .bar i{display:block;height:100%;background:var(--ok)}
+.cal-d.other:hover{background:transparent}
+.cal-d.other .dn{color:#c7c7cc;background:transparent}
+/* 进度用底部小圆点，不再用拉长的条 */
+.cal-d .bar{
+  position:absolute;left:50%;bottom:2px;transform:translateX(-50%);
+  width:auto;height:auto;background:transparent;margin:0;overflow:visible;
+  display:flex;gap:2px;justify-content:center;pointer-events:none;
+}
+.cal-d .bar i{
+  display:block;width:3.5px;height:3.5px;border-radius:50%;background:var(--ok);
+}
 .cal-d .bar i.ok{background:var(--ok)}
 .cal-d .bar i.rem{background:var(--danger)}
-.cal-d .plus{position:absolute;top:0;right:0;width:15px;height:15px;border:0;background:transparent;color:var(--teal);font-size:14px;line-height:15px;opacity:0;cursor:pointer;padding:0}
-.cal-d:hover .plus{opacity:.75}
-.cal-d .plus:hover{opacity:1}
-.cal-sum{margin-top:9px;padding-top:9px;border-top:1px solid var(--line-s)}
+.cal-d .plus{
+  position:absolute;top:-1px;right:-1px;width:14px;height:14px;border:0;
+  background:#fff;color:var(--teal);font-size:12px;line-height:14px;opacity:0;
+  cursor:pointer;padding:0;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.08);
+}
+.cal-d:hover .plus{opacity:.9}
+.cal-d .plus:hover{opacity:1;background:var(--teal-l)}
+.cal-sum{margin-top:10px;padding-top:10px;border-top:1px solid var(--line-s)}
 .cal-sum .row{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--sub)}
 .cal-sum .row b{color:var(--text);font-weight:600}
 .cal-sum .bar{height:6px;background:#e2e8e6;border-radius:4px;margin-top:6px;overflow:hidden}
@@ -108,11 +129,25 @@ ul{margin:0;padding:0;list-style:none}
 .wrap{max-width:1140px;margin:0 auto;padding:0 24px}
 
 /* ---------- 页头插画 ---------- */
-.hero{position:relative;height:120px;overflow:hidden;background:linear-gradient(135deg,#1d1d1f 0%,#2c2c2e 60%,#0071e3 180%)}
-.hero svg{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:.35}
-.hero-txt{position:relative;max-width:1140px;margin:0 auto;padding:28px 24px;color:#fff}
-.hero-txt h1{font-size:22px;letter-spacing:-.03em;font-weight:600}
-.hero-txt p{margin:6px 0 0;font-size:13px;opacity:.72;font-weight:400}
+.hero{
+  position:relative;height:148px;overflow:hidden;
+  background:linear-gradient(160deg,#0c1929 0%,#163a6b 48%,#0071e3 100%);
+}
+.hero svg{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:1;pointer-events:none}
+.hero-txt{
+  position:relative;max-width:1140px;margin:0 auto;
+  padding:32px 28px 40px;color:#fff;
+  display:flex;flex-direction:column;justify-content:center;min-height:148px;
+  box-sizing:border-box;
+}
+.hero-txt h1{
+  font-size:24px;letter-spacing:-.03em;font-weight:650;line-height:1.25;
+  margin:0;max-width:22em;
+}
+.hero-txt p{
+  margin:10px 0 0;font-size:14px;opacity:.78;font-weight:400;
+  line-height:1.55;max-width:28em;letter-spacing:.01em;
+}
 
 /* ---------- 通用卡片 ---------- */
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh)}
@@ -180,10 +215,10 @@ ul{margin:0;padding:0;list-style:none}
 .tag.cl:hover{background:var(--teal-b)}
 
 /* ---------- 今天要处理 ---------- */
-.today{border:1px solid var(--line);border-radius:var(--r);background:#fff;box-shadow:var(--sh);overflow:hidden;margin-top:-28px;position:relative;z-index:5}
-.today-h{padding:14px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line-s);background:#fff}
-.today-h h2{font-size:16px;letter-spacing:-.02em}
-.today-h .dt{font-size:12.5px;color:var(--muted);margin-left:auto}
+.today{border:1px solid var(--line);border-radius:var(--r);background:#fff;box-shadow:var(--sh-h);overflow:hidden;margin-top:-24px;position:relative;z-index:5}
+.today-h{padding:16px 18px;display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;border-bottom:1px solid var(--line-s);background:#fff}
+.today-h h2{font-size:16px;letter-spacing:-.02em;font-weight:650}
+.today-h .dt{font-size:13px;color:var(--muted);margin-left:auto;white-space:nowrap}
 .trow{
   display:flex;align-items:flex-start;gap:11px;padding:11px 18px;border-bottom:1px solid var(--line-s);
 }
@@ -259,9 +294,11 @@ ul{margin:0;padding:0;list-style:none}
   .g4,.g3,.g2{grid-template-columns:1fr}
   .g4.keep2,.g2.keep2{grid-template-columns:repeat(2,1fr)}
   .wrap{padding:0 14px}
-  .hero{height:100px}
-  .hero-txt{padding:22px 14px}
-  .hero-txt h1{font-size:19px}
+  .hero{height:132px}
+  .hero-txt{padding:22px 18px 36px;min-height:132px}
+  .hero-txt h1{font-size:20px;line-height:1.3;max-width:16em}
+  .hero-txt p{margin-top:8px;font-size:13px;line-height:1.5;opacity:.8;max-width:22em}
+  .today{margin-top:-22px}
   .main{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
   .mtop{
     display:flex;align-items:center;gap:8px;padding:10px 14px;
@@ -373,50 +410,53 @@ html,body{overflow-x:hidden}
 
     <!-- 页头插画（内联 SVG，无外链） -->
     <div class="hero">
-      <svg viewBox="0 0 1200 132" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <svg viewBox="0 0 1200 148" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <defs>
-          <linearGradient id="hg" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="#0f766e"/><stop offset=".55" stop-color="#0d7d86"/><stop offset="1" stop-color="#075985"/>
+          <linearGradient id="hg" x1="0" y1="0" x2="1" y2="0.9">
+            <stop offset="0%" stop-color="#0c1929"/>
+            <stop offset="45%" stop-color="#163a6b"/>
+            <stop offset="100%" stop-color="#0071e3"/>
           </linearGradient>
-          <linearGradient id="hw" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#5eead4" stop-opacity=".30"/><stop offset="1" stop-color="#5eead4" stop-opacity="0"/>
+          <linearGradient id="glow" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#5ac8fa" stop-opacity=".22"/>
+            <stop offset="100%" stop-color="#5ac8fa" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="soft" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0"/>
+            <stop offset="50%" stop-color="#ffffff" stop-opacity=".06"/>
+            <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
           </linearGradient>
         </defs>
-        <rect width="1200" height="132" fill="url(#hg)"/>
-        <g opacity=".5">
-          <circle cx="1040" cy="34" r="86" fill="none" stroke="#7dd3fc" stroke-opacity=".22" stroke-width="1"/>
-          <circle cx="1040" cy="34" r="126" fill="none" stroke="#7dd3fc" stroke-opacity=".14" stroke-width="1"/>
-          <circle cx="1040" cy="34" r="168" fill="none" stroke="#7dd3fc" stroke-opacity=".08" stroke-width="1"/>
+        <rect width="1200" height="148" fill="url(#hg)"/>
+        <!-- 右侧柔和光晕与圆环（替代生硬几何） -->
+        <circle cx="980" cy="20" r="120" fill="url(#glow)"/>
+        <circle cx="1080" cy="90" r="90" fill="#5ac8fa" fill-opacity=".06"/>
+        <g fill="none" stroke="#a5d8ff" stroke-width="1.2">
+          <circle cx="1040" cy="40" r="52" stroke-opacity=".18"/>
+          <circle cx="1040" cy="40" r="78" stroke-opacity=".12"/>
+          <circle cx="1040" cy="40" r="108" stroke-opacity=".07"/>
         </g>
-        <g opacity=".38" fill="#99f6e4">
-          <rect x="712" y="74" width="26" height="58" rx="2"/>
-          <rect x="746" y="56" width="20" height="76" rx="2"/>
-          <rect x="774" y="86" width="30" height="46" rx="2"/>
-          <rect x="812" y="44" width="18" height="88" rx="2"/>
-          <rect x="838" y="70" width="26" height="62" rx="2"/>
-          <rect x="872" y="92" width="22" height="40" rx="2"/>
-          <rect x="902" y="62" width="16" height="70" rx="2"/>
-          <rect x="926" y="80" width="28" height="52" rx="2"/>
-          <rect x="962" y="52" width="18" height="80" rx="2"/>
-          <rect x="988" y="88" width="24" height="44" rx="2"/>
-          <rect x="1020" y="66" width="20" height="66" rx="2"/>
-          <rect x="1048" y="84" width="30" height="48" rx="2"/>
-          <rect x="1086" y="58" width="18" height="74" rx="2"/>
-          <rect x="1112" y="78" width="26" height="54" rx="2"/>
-          <rect x="1146" y="92" width="22" height="40" rx="2"/>
+        <!-- 右侧轻量圆角柱（节奏感，非尖角） -->
+        <g fill="#ffffff" fill-opacity=".10">
+          <rect x="760" y="78" width="14" height="42" rx="7"/>
+          <rect x="784" y="58" width="14" height="62" rx="7"/>
+          <rect x="808" y="68" width="14" height="52" rx="7"/>
+          <rect x="832" y="42" width="14" height="78" rx="7"/>
+          <rect x="856" y="54" width="14" height="66" rx="7"/>
+          <rect x="880" y="72" width="14" height="48" rx="7"/>
+          <rect x="904" y="48" width="14" height="72" rx="7"/>
+          <rect x="928" y="62" width="14" height="58" rx="7"/>
         </g>
-        <path d="M0 106 C 150 78, 300 122, 460 96 C 600 74, 720 108, 860 92 C 1000 76, 1100 104, 1200 88 L1200 132 L0 132 Z" fill="url(#hw)"/>
-        <path d="M0 106 C 150 78, 300 122, 460 96 C 600 74, 720 108, 860 92 C 1000 76, 1100 104, 1200 88" fill="none" stroke="#5eead4" stroke-opacity=".4" stroke-width="1.4"/>
-        <g stroke="#a5f3fc" stroke-opacity=".3" stroke-width="1">
-          <path d="M60 132 V 40 H 190"/><path d="M120 132 V 70 H 260"/>
-        </g>
-        <g fill="#5eead4" fill-opacity=".55">
-          <circle cx="60" cy="40" r="3.2"/><circle cx="190" cy="40" r="3.2"/><circle cx="120" cy="70" r="3.2"/><circle cx="260" cy="70" r="3.2"/>
-        </g>
+        <!-- 底部柔和波浪，替代左侧黑色尖角折线 -->
+        <path d="M0 118 C 180 102, 320 128, 480 112 S 780 100, 960 118 S 1120 130, 1200 116 L1200 148 L0 148 Z" fill="#ffffff" fill-opacity=".06"/>
+        <path d="M0 126 C 200 114, 360 136, 520 122 S 820 110, 1000 128 S 1140 138, 1200 124" fill="none" stroke="#5ac8fa" stroke-opacity=".25" stroke-width="1.5"/>
+        <!-- 左侧柔和光斑，无尖角 -->
+        <ellipse cx="120" cy="40" rx="160" ry="70" fill="url(#soft)"/>
+        <circle cx="60" cy="100" r="40" fill="#5ac8fa" fill-opacity=".05"/>
       </svg>
       <div class="hero-txt">
-        <h1 id="heroTitle">今天要处理的</h1>
-        <p id="heroSub">把逾期和卡住的事先解决掉，剩下的按节奏走</p>
+        <h1 id="heroTitle">今日概览</h1>
+        <p id="heroSub">先处理逾期与卡点，其余按计划推进</p>
       </div>
     </div>
 
@@ -664,10 +704,11 @@ function renderCalendar(){
     var bar='';
     if(s.total){
       if(s.done===s.total){
-        bar='<div class="bar"><i class="ok" style="width:100%"></i></div>';
+        bar='<div class="bar"><i class="ok"></i></div>';
+      }else if(s.done>0){
+        bar='<div class="bar"><i class="ok"></i><i class="rem"></i></div>';
       }else{
-        var rem=Math.round((s.total-s.done)/s.total*100);   // 未完成比例 -> 红色条
-        bar='<div class="bar"><i class="rem" style="width:'+rem+'%"></i></div>';
+        bar='<div class="bar"><i class="rem"></i></div>';
       }
     }
     html+='<div class="'+cls+'" onclick="gotoTodoDate(\''+ds+'\')">'+
@@ -1511,15 +1552,15 @@ function renderFooterTools(){
 
 /* ---------- 总渲染 ---------- */
 var HERO={
-  today:['今天要处理的','把逾期和卡住的事先解决掉，剩下的按节奏走'],
-  todo:['待办事项','按轻重缓急排，昨天没做完的会自动挪到今天'],
-  sched:['课表与值班','把每天的上课和坐班一眼看清，今天明天都不漏'],
-  class:['班级与学生','学生、考勤、谈话家校，一个班一页'],
-  meet:['会议记录','日期、地点、主持、结论都留痕，标签一搜就到'],
-  ledger:['行政台账','资产、材料报送，截止前自动提醒'],
-  idea:['灵感速记','想到就记，别指望脑子'],
-  proj:['项目跟进','到哪一步、下一步做什么、卡在哪儿'],
-  week:['工作复盘','周 / 月 / 年复盘，看清节奏、精力去向与卡点']
+  today:['今日概览','先处理逾期与卡点，其余按计划推进'],
+  todo:['待办事项','按轻重缓急排列 · 未完成会自动顺延到今天'],
+  sched:['课表与值班','上课、坐班、值班一目了然'],
+  class:['班级与学生','学生 · 考勤 · 谈话家校，一个班一页管完'],
+  meet:['会议记录','时间地点、主持结论留痕，标签随时可搜'],
+  ledger:['行政台账','资产登记与材料报送，临近截止自动提醒'],
+  idea:['灵感速记','想到就记下，不用一次写完整'],
+  proj:['项目跟进','当前进度、下一步动作与卡点'],
+  week:['工作复盘','周 / 月 / 年回顾，看清节奏与精力去向']
 };
 function render(){
   autoRoll();
