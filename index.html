@@ -381,7 +381,6 @@ html,body{overflow-x:hidden}
 }
 
 </style>
-<script data-page-node-id="8mkFQinkQdd5G8tULyMEKL" src="https://workbuddy-space-static.codebuddy.work/page/page_comm/inject.js"></script>
 </head>
 <body>
 
@@ -593,7 +592,6 @@ function load(){
 function save(){
   try{localStorage.setItem(KEY,JSON.stringify(DB));}
   catch(e){alert('保存失败：浏览器存储空间可能已满。建议先导出备份，再清理一部分旧数据。');}
-  scheduleCloudSync();
 }
 function total(){return DB.todos.length+DB.meetings.length+DB.ideas.length+DB.projects.length+DB.reports.length;}
 
@@ -961,7 +959,7 @@ function renderIdea(){
   var form='<div class="card pad"><div class="f">'+
     '<div><label>想到什么随手记</label><textarea id="iTxt" placeholder="不用组织语言，先记下来"></textarea></div>'+
     '<div class="frow"><div><label>标签（逗号或空格分隔）</label><input id="iTags" placeholder="如：流程优化, 降本"></div>'+
-    '<div style="display:flex;align-items:flex-end"><button class="btn pri blk" onclick="addIdea()">'+ic('plus',15)+'记下来</button></div></div>'+
+    '<div style="display:flex;flex-direction:column;justify-content:flex-end"><button class="btn pri blk" onclick="addIdea()">'+ic('plus',15)+'记下来</button></div></div>'+
   '</div></div>';
   var filt=tags.length?'<div style="margin:12px 0 6px"><span class="hint" style="margin-right:6px">按标签筛选：</span>'+
     '<span class="tag cl '+(f?'':'on')+'" onclick="setTag(\'ideaTag\',\'\')">全部 '+DB.ideas.length+'</span>'+
@@ -1856,117 +1854,9 @@ function closeModal(){$('modalRoot').innerHTML='';}
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();});
 
 /* ==================================================================
-   云端同步层（WorkBuddy 资料库 · 多端同步）
-   单表存储：集合 / 记录ID / 数据(JSON)
-   ================================================================== */
-var DBID='Q81K9U5IHuV5rylmtqC0VF';
-var SYNC_COLLS=['projects','todos','meetings','ideas','sched','classes','students','attend','talks','assets','reports'];
-var PUBLIC_MODE=(location.host.indexOf('workbuddy.link')>=0);
-var _db=null,_cloudReady=false,_syncTimer=null,CLOUD={};
-
-function getDb(){return (window.__SMART_PAGE__&&window.__SMART_PAGE__.database)?window.__SMART_PAGE__.database:null;}
-function _call(method,params,ms){ms=ms||15000;return new Promise(function(res,rej){var done=false;var t=setTimeout(function(){if(!done){done=true;rej(new Error('云端响应超时'));}},ms);try{Promise.resolve(method(params)).then(function(r){if(!done){done=true;clearTimeout(t);res(r);}}).catch(function(e){if(!done){done=true;clearTimeout(t);rej(e);}});}catch(e){if(!done){done=true;clearTimeout(t);rej(e);}}});}
-function _toProps(coll,obj){return {'集合':{text:coll},'记录ID':{text:String(obj.id)},'数据':{text:JSON.stringify(obj)}};}
-function _fromCloud(coll,rec){var o;try{o=JSON.parse(rec['数据']);}catch(e){return null;}if(!o||typeof o!=='object')return null;o._rid=rec._id;return o;}
-
-function setSyncBadge(state,msg){
-  var el=document.getElementById('syncBadge');
-  if(!el){el=document.createElement('div');el.id='syncBadge';el.style.cssText='position:fixed;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:9999;font-size:12px;line-height:1;padding:6px 11px;border-radius:18px;box-shadow:0 2px 8px rgba(0,0,0,.18);cursor:default;max-width:72vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;';document.body.appendChild(el);}
-  var map={
-    syncing:{bg:'#0071e3',c:'#fff',t:'☁ 同步中…'},
-    ok:{bg:'#34c759',c:'#fff',t:'☁ 已同步'},
-    offline:{bg:'#8e8e93',c:'#fff',t:'☁ 离线缓存'},
-    public:{bg:'#0071e3',c:'#fff',t:'☁ 公开链接：仅离线预览'},
-    error:{bg:'#ff3b30',c:'#fff',t:'☁ 同步失败：'+(msg||'未知错误')}
-  };
-  var s=map[state]||map.offline;
-  el.style.background=s.bg;el.style.color=s.c;el.textContent=s.t;
-  el.style.cursor=(state==='error')?'pointer':'default';
-  el.onclick=(state==='error')?function(){initCloud();}:null;
-}
-
-function initCloud(){
-  if(PUBLIC_MODE){setSyncBadge('public');return;}
-  setSyncBadge('syncing');
-  var waited=0;
-  (function poll(){
-    _db=getDb();
-    if(_db){_bootCloud();return;}
-    if(waited>=20000){setSyncBadge('offline');return;}
-    waited+=400;setTimeout(poll,400);
-  })();
-}
-
-function _bootCloud(){
-  if(!_db){setSyncBadge('offline');return;}
-  _call(function(p){return _db.query({databaseId:DBID,pageSize:1000});},null,15000).then(function(res){
-    var recs=(res&&res.results)||[];
-    var cloudEmpty=(recs.length===0);
-    SYNC_COLLS.forEach(function(coll){
-      var crecs=recs.filter(function(r){return r['集合']===coll;});
-      if(cloudEmpty){
-        CLOUD[coll]=DB[coll].map(function(o){return {id:String(o.id),_rid:undefined};});
-      }else{
-        var arr=crecs.map(function(r){return _fromCloud(coll,r);}).filter(Boolean);
-        DB[coll]=arr;
-        CLOUD[coll]=crecs.map(function(r){return {id:String(r['记录ID']),_rid:r._id};});
-      }
-    });
-    var mrec=recs.filter(function(r){return r['集合']==='meta';})[0];
-    if(mrec&&mrec['数据']){try{var m=JSON.parse(mrec['数据']);DB.ver=m.ver||DB.ver;DB.lastRoll=m.lastRoll||DB.lastRoll;DB.lastExport=m.lastExport||DB.lastExport;DB.noticeAt=m.noticeAt||DB.noticeAt;}catch(e){}}
-    CLOUD['meta']=mrec?{id:'meta',_rid:mrec._id}:{id:'meta',_rid:undefined};
-    _cloudReady=true;
-    setSyncBadge('ok');
-    render();
-    _doCloudSync();
-  }).catch(function(e){
-    setSyncBadge('error',(e&&e.message)||'');
-  });
-}
-
-function scheduleCloudSync(){
-  if(PUBLIC_MODE||!_cloudReady)return;
-  if(_syncTimer)clearTimeout(_syncTimer);
-  _syncTimer=setTimeout(function(){_doCloudSync();},800);
-}
-
-function _doCloudSync(){
-  if(PUBLIC_MODE||!_db||!_cloudReady)return;
-  setSyncBadge('syncing');
-  var tasks=SYNC_COLLS.map(function(c){return _syncColl(c);});
-  tasks.push(_syncMeta());
-  Promise.all(tasks).then(function(){setSyncBadge('ok');}).catch(function(e){setSyncBadge('error',(e&&e.message)||'');});
-}
-
-function _syncColl(coll){
-  var local=DB[coll]||[];
-  var cloud=CLOUD[coll]||[];
-  var cloudBy={};cloud.forEach(function(c){cloudBy[c.id]=c;});
-  var localIds={};local.forEach(function(o){if(o&&o.id)localIds[String(o.id)]=1;});
-  var ops=[];
-  local.forEach(function(o){
-    if(!o||!o.id)return;
-    var cid=String(o.id);
-    if(cloudBy[cid]){ops.push(_call(function(p){return _db.updateRecord({databaseId:DBID,recordId:cloudBy[cid]._rid,properties:_toProps(coll,o)});},null,15000).then(function(){}).catch(function(){}));}
-    else{ops.push(_call(function(p){return _db.addRecord({databaseId:DBID,properties:_toProps(coll,o)});},null,15000).then(function(r){if(r&&r.id)cloudBy[cid]={id:cid,_rid:r.id};}).catch(function(){}));}
-  });
-  cloud.forEach(function(c){if(!localIds[c.id]){ops.push(_call(function(p){return _db.deleteRecord({databaseId:DBID,recordId:c._rid});},null,15000).then(function(){}).catch(function(){}));}});
-  return Promise.all(ops).then(function(){CLOUD[coll]=local.filter(function(o){return o&&o.id;}).map(function(o){var cid=String(o.id);return {id:cid,_rid:(cloudBy[cid]?cloudBy[cid]._rid:undefined)};});});
-}
-
-function _syncMeta(){
-  var m={ver:DB.ver,lastRoll:DB.lastRoll,lastExport:DB.lastExport,noticeAt:DB.noticeAt};
-  var props={'集合':{text:'meta'},'记录ID':{text:'meta'},'数据':{text:JSON.stringify(m)}};
-  var cm=CLOUD['meta'];
-  if(cm&&cm._rid){return _call(function(p){return _db.updateRecord({databaseId:DBID,recordId:cm._rid,properties:props});},null,15000).then(function(){}).catch(function(){});}
-  return _call(function(p){return _db.addRecord({databaseId:DBID,properties:props});},null,15000).then(function(r){if(r&&r.id)CLOUD['meta']={id:'meta',_rid:r.id};}).catch(function(){});
-}
-
-/* ==================================================================
    启动
    ================================================================== */
 load();
-initCloud();
 (function(){var dl=document.getElementById('deptList');if(dl){dl.innerHTML=PROJDEPTS.map(function(d){return '<option value="'+esc(d)+'">';}).join('');}})();
 render();
 /* 跨天自动刷新（页面一直开着时，第二天打开也能正确顺延） */
