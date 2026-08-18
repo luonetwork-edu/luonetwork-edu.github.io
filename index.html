@@ -584,10 +584,25 @@ function load(){
     if(!raw){DB=seed();save();return;}
     DB=JSON.parse(raw);
     ['projects','todos','meetings','ideas','sched','classes','students','attend','talks','assets','reports'].forEach(function(k){if(!Array.isArray(DB[k]))DB[k]=[];});
-    /* 字段兜底：防止历史/异常数据缺字段导致渲染时整页崩溃（如 x.pri.toLowerCase()） */
-    DB.todos.forEach(function(x){ if(!x||typeof x!=='object')return; if(!x.pri)x.pri='P2'; if(x.roll===undefined)x.roll=0; if(x.done===undefined)x.done=0; if(x.due===undefined)x.due=''; if(x.note===undefined)x.note=''; });
-    DB.meetings.forEach(function(x){ if(!x||typeof x!=='object')return; if(!x.pri)x.pri='P2'; if(!x.date)x.date=''; if(x.content===undefined)x.content=''; if(!Array.isArray(x.tags))x.tags=[]; });
+    sanitizeDB();
   }catch(e){DB=seed();}
+}
+/* 字段兜底：防止历史/异常数据缺字段导致渲染时整页崩溃（如 x.pri.toLowerCase()）。
+   所有集合都补默认值，导入恢复后同样调用。 */
+function sanitizeDB(){
+  if(!DB||typeof DB!=='object'){DB=seed();return;}
+  ['projects','todos','meetings','ideas','sched','classes','students','attend','talks','assets','reports'].forEach(function(k){if(!Array.isArray(DB[k]))DB[k]=[];});
+  DB.todos.forEach(function(x){ if(!x||typeof x!=='object')return; if(!x.title)x.title=''; if(!x.pri)x.pri='P2'; if(x.roll===undefined)x.roll=0; if(x.done===undefined)x.done=0; if(x.due===undefined)x.due=''; if(x.start===undefined)x.start=''; if(x.note===undefined)x.note=''; });
+  DB.meetings.forEach(function(x){ if(!x||typeof x!=='object')return; if(!x.title)x.title=''; if(!x.pri)x.pri='P2'; if(!x.date)x.date=''; if(!x.time)x.time=''; if(!x.place)x.place=''; if(!x.dept)x.dept=''; if(!x.host)x.host=''; if(x.content===undefined)x.content=''; if(!Array.isArray(x.tags))x.tags=[]; });
+  DB.projects.forEach(function(x){ if(!x||typeof x!=='object')return; if(!x.name)x.name='未命名项目'; if(!x.status)x.status='normal'; if(!x.type)x.type='通用'; if(x.dept===undefined)x.dept=''; if(x.stage===undefined)x.stage=''; if(x.next===undefined)x.next=''; if(x.blocker===undefined)x.blocker=''; });
+  DB.ideas.forEach(function(x){ if(!x||typeof x!=='object')return; if(x.text===undefined)x.text=''; if(x.createdAt===undefined)x.createdAt=''; if(!Array.isArray(x.tags))x.tags=[]; });
+  DB.sched.forEach(function(x){ if(!x||typeof x!=='object')return; if(!x.title)x.title=''; if(x.day===undefined)x.day=1; if(!x.type)x.type='其他'; if(x.per===undefined)x.per=''; if(x.place===undefined)x.place=''; if(x.cls===undefined)x.cls=''; });
+  DB.classes.forEach(function(x){ if(!x||typeof x!=='object')return; if(!x.name)x.name='未命名班级'; if(x.room===undefined)x.room=''; });
+  DB.students.forEach(function(x){ if(!x||typeof x!=='object')return; if(!x.name)x.name=''; if(!x.cid)x.cid=''; if(x.no===undefined)x.no=''; if(x.sex===undefined)x.sex=''; if(x.phone===undefined)x.phone=''; if(!x.status)x.status='在读'; if(x.note===undefined)x.note=''; });
+  DB.attend.forEach(function(x){ if(!x||typeof x!=='object')return; if(x.cid===undefined)x.cid=''; if(x.sid===undefined)x.sid=''; if(!x.date)x.date=''; if(!x.status)x.status='出勤'; if(x.reason===undefined)x.reason=''; });
+  DB.talks.forEach(function(x){ if(!x||typeof x!=='object')return; if(x.cid===undefined)x.cid=''; if(x.sid===undefined)x.sid=''; if(!x.date)x.date=''; if(!x.type)x.type='谈话'; if(x.content===undefined)x.content=''; if(x.result===undefined)x.result=''; });
+  DB.assets.forEach(function(x){ if(!x||typeof x!=='object')return; if(!x.name)x.name=''; if(!x.cat)x.cat=''; if(x.model===undefined)x.model=''; if(!x.qty)x.qty=1; if(!x.loc)x.loc=''; if(x.code===undefined)x.code=''; if(!x.owner)x.owner=''; if(!x.status)x.status='正常'; if(x.note===undefined)x.note=''; });
+  DB.reports.forEach(function(x){ if(!x||typeof x!=='object')return; if(!x.title)x.title=''; if(!x.status)x.status='待报'; if(x.due===undefined)x.due=''; if(x.dept===undefined)x.dept=''; if(!x.freq)x.freq='一次性'; if(x.note===undefined)x.note=''; });
 }
 function save(){
   try{localStorage.setItem(KEY,JSON.stringify(DB));}
@@ -854,8 +869,9 @@ function renderTodo(){
     '<div><label>任务内容</label><input id="tdT" placeholder="要做什么，写清楚一点" value="'+esc(ed?ed.title:'')+'"></div>'+
     '<div class="frow">'+
       '<div><label>轻重缓急</label><select id="tdP">'+priOpts+'</select></div>'+
-      '<div><label>截止日期</label><input id="tdD" type="date" value="'+esc(ed?ed.due:df)+'"></div>'+
       '<div><label>挂到项目下</label><select id="tdJ">'+opts+'</select></div>'+
+      '<div><label>开始日期</label><input id="tdS" type="date" value="'+esc(ed?ed.start:'')+'"></div>'+
+      '<div><label>截止日期</label><input id="tdD" type="date" value="'+esc(ed?ed.due:df)+'"></div>'+
     '</div>'+
     '<div><label>备注</label><textarea id="tdN" rows="2" placeholder="补充说明、链接、注意事项…">'+esc(ed?ed.note:'')+'</textarea></div>'+
     '<div class="frow" style="align-items:center">'+
@@ -876,6 +892,7 @@ function renderTodo(){
       '<button class="chk'+(x.done?' on':'')+'" onclick="toggleTodo(\''+x.id+'\')" aria-label="完成">'+(x.done?'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>':'')+'</button>'+
       '<div class="bd"><div class="tt">'+esc(x.title)+'</div><div class="mt">'+
         '<span class="pill '+x.pri.toLowerCase()+'">'+x.pri+'</span>'+
+        (x.start?'<span>开始 '+cnDate(x.start)+'</span>':'')+
         (x.due?'<span class="'+(late?'overdue':'')+'">'+cnDate(x.due)+' '+weekName(x.due)+'</span>':'<span>未设日期</span>')+
         (late?'<span class="overdue">'+ic('warn',11)+' 已顺延 '+x.roll+' 次'+(x.origDue?'（原定 '+cnDate(x.origDue)+'）':'')+'</span>':'')+
         (p?'<span class="pill pt">'+ic('link',10)+' '+esc(p.name)+'</span>':'')+
@@ -1486,19 +1503,21 @@ function addTalk(cid){
 /* ---------- 行政台账 ---------- */
 function renderLedger(){
   var assetForm='<div class="card pad"><div class="f">'+
-    '<div class="frow"><div><label>名称</label><input id="aName" placeholder="如：联想台式机"></div>'+
-    '<div><label>类别</label><input id="aCat" placeholder="如：计算机 / 实训设备"></div>'+
-    '<div><label>数量</label><input id="aQty" type="number" value="1" style="width:100%"></div></div>'+
+    '<div class="frow"><div><label>设备名称</label><input id="aName" placeholder="如：联想台式机"></div>'+
+    '<div><label>设备类别</label><input id="aCat" placeholder="如：计算机 / 实训设备"></div>'+
+    '<div><label>设备型号</label><input id="aModel" placeholder="如：ThinkCentre M720"></div>'+
+    '<div><label>设备数量</label><input id="aQty" type="number" value="1" style="width:100%"></div></div>'+
     '<div class="frow"><div><label>存放位置</label><input id="aLoc" placeholder="如：机房 302"></div>'+
-    '<div><label>责任人</label><input id="aOwner" placeholder="如：实训中心"></div>'+
-    '<div><label>状态</label><select id="aSta">'+ASSETST.map(function(s){return '<option'+(s==='正常'?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div></div>'+
+    '<div><label>机器编号</label><input id="aCode" placeholder="如：JF-2024-001"></div>'+
+    '<div><label>责任人员</label><input id="aOwner" placeholder="如：张三"></div>'+
+    '<div><label>设备状态</label><select id="aSta">'+ASSETST.map(function(s){return '<option'+(s==='正常'?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div></div>'+
     '<div><label>备注</label><input id="aNote" placeholder="如：2024 年采购，质保 3 年"></div>'+
     '<div><button class="btn pri" onclick="addAsset()">'+ic('plus',15)+'登记资产</button></div>'+
   '</div></div>';
   var assetList=DB.assets.length?DB.assets.slice().reverse().map(function(a){
     var col={正常:'pg',维修:'p1',报废:'pr',借出:'pb'}[a.status]||'p2';
-    return '<div class="led-row"><div class="bd"><b style="font-size:14px">'+esc(a.name)+'</b>'+(a.cat?' <span class="hint">'+esc(a.cat)+'</span>':'')+
-      '<div class="mt">'+(a.qty?('×'+esc(a.qty)+' '):'')+(a.loc?esc(a.loc)+' · ':'')+(a.owner?('责任人 '+esc(a.owner)):'')+(a.note?(' · '+esc(a.note)):'')+'</div></div>'+
+    return '<div class="led-row"><div class="bd"><b style="font-size:14px">'+esc(a.name)+'</b>'+(a.model?' <span class="hint">'+esc(a.model)+'</span>':'')+(a.cat?' <span class="hint">'+esc(a.cat)+'</span>':'')+
+      '<div class="mt">'+(a.qty?('数量 ×'+esc(a.qty)):'')+(a.loc?(' · '+esc(a.loc)):'')+(a.code?(' · 编号 '+esc(a.code)):'')+(a.owner?(' · 责任人 '+esc(a.owner)):'')+(a.note?(' · '+esc(a.note)):'')+'</div></div>'+
       '<span class="pill '+col+'">'+esc(a.status)+'</span>'+
       '<button class="btn sm dgr" onclick="delItem(\'assets\',\''+a.id+'\')">'+ic('trash',12)+'</button></div>';
   }).join(''):'<div class="empty">'+ic('ledger',26,1.6)+'还没有资产台账</div>';
@@ -1529,8 +1548,8 @@ function renderLedger(){
 }
 function addAsset(){
   var n=$('aName').value.trim();
-  if(!n){alert('名称不能为空');$('aName').focus();return;}
-  DB.assets.push({id:uid(),name:n,cat:$('aCat').value.trim(),qty:$('aQty').value||1,loc:$('aLoc').value.trim(),owner:$('aOwner').value.trim(),status:$('aSta').value,note:$('aNote').value.trim()});
+  if(!n){alert('设备名称不能为空');$('aName').focus();return;}
+  DB.assets.push({id:uid(),name:n,cat:$('aCat').value.trim(),model:$('aModel').value.trim(),qty:$('aQty').value||1,loc:$('aLoc').value.trim(),code:$('aCode').value.trim(),owner:$('aOwner').value.trim(),status:$('aSta').value,note:$('aNote').value.trim()});
   save();render();
 }
 function addRep(){
@@ -1544,13 +1563,15 @@ function markRep(id){DB.reports.forEach(function(r){if(r.id===id)r.status='已�
 /* ---------- 数据管理视图（内嵌到底部） ---------- */
 function renderFooterTools(){
   var n=total(), s=DB.todos.filter(function(x){return x.sample;}).length+DB.meetings.filter(function(x){return x.sample;}).length+DB.ideas.filter(function(x){return x.sample;}).length+DB.projects.filter(function(x){return x.sample;}).length;
-  return '<div class="sec"><div class="card pad" style="display:flex;gap:9px;flex-wrap:wrap;align-items:center">'+
-    '<div style="flex:1;min-width:180px"><b style="font-size:14px">数据管理</b>'+
+  return '<div class="sec"><div class="card pad">'+
+    '<div style="display:flex;gap:9px;flex-wrap:wrap;align-items:baseline"><b style="font-size:14px">数据管理</b>'+
     '<div class="hint">当前共 '+n+' 条，全部保存在这台设备的浏览器里'+(DB.lastExport?'，上次导出 '+DB.lastExport:'，还没导出过')+'</div></div>'+
-    '<button class="btn pri" onclick="doExport()">导出备份</button>'+
-    '<button class="btn" onclick="pickImport()">导入恢复</button>'+
-    (s?'<button class="btn" onclick="clearSample()">清空示例（'+s+' 条）</button>':'')+
-    '<button class="btn dgr" onclick="clearAll()">清空全部数据</button>'+
+    '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:12px">'+
+      '<button class="btn pri" onclick="doExport()">导出备份</button>'+
+      '<button class="btn" onclick="pickImport()">导入恢复</button>'+
+      (s?'<button class="btn" onclick="clearSample()">清空示例（'+s+' 条）</button>':'')+
+      '<button class="btn dgr" onclick="clearAll()">清空全部数据</button>'+
+    '</div>'+
   '</div></div>';
 }
 
@@ -1646,7 +1667,7 @@ function setTag(k,v){FILTER[k]=(FILTER[k]===v?'':v);render();}
 function addTodo(){
   var t=$('tdT').value.trim();
   if(!t){alert('先写一下任务内容');$('tdT').focus();return;}
-  DB.todos.push({id:uid(),title:t,pri:$('tdP').value,due:$('tdD').value||today(),done:0,pid:$('tdJ').value,roll:0,createdAt:today(),note:($('tdN')?$('tdN').value.trim():'')});
+  DB.todos.push({id:uid(),title:t,pri:$('tdP').value,start:$('tdS').value,due:$('tdD').value||today(),done:0,pid:$('tdJ').value,roll:0,createdAt:today(),note:($('tdN')?$('tdN').value.trim():'')});
   EDIT_TODO_ID='';
   save();render();
 }
@@ -1659,6 +1680,7 @@ function saveTodoEdit(){
   if(!t){alert('先写一下任务内容');$('tdT').focus();return;}
   e.title=t;
   e.pri=$('tdP').value;
+  e.start=$('tdS').value;
   e.due=$('tdD').value||today();
   e.pid=$('tdJ').value;
   e.note=$('tdN').value.trim();
@@ -1761,12 +1783,13 @@ function doDel(coll,id){
    ================================================================== */
 function doExport(){
   var data=JSON.parse(JSON.stringify(DB));
-  data.exportedAt=new Date().toISOString();
+  var now=new Date();
+  data.exportedAt=ymd(now)+' '+pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
   data.exportedBy='教师办公工作台 v1';
   var blob=new Blob(['\uFEFF'+JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'});
   var a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  a.download='教师办公工作台备份_'+today().replace(/-/g,'')+'.txt';
+  a.download='教师办公工作台备份_'+today().replace(/-/g,'')+'.json';
   document.body.appendChild(a);a.click();document.body.removeChild(a);
   setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
   DB.lastExport=today();DB.noticeAt=total();DB.noticeHidden=0;save();renderNotice();
@@ -1802,14 +1825,16 @@ function doImport(overwrite){
     DB.lastRoll=d.lastRoll||'';DB.lastExport=d.lastExport||'';
   }else{
     keys.forEach(function(k){
-      var have={};DB[k].forEach(function(x){have[x.id]=1;});
+      var have={};DB[k].forEach(function(x){if(x&&x.id)have[x.id]=1;});
       (d[k]||[]).forEach(function(x){
+        if(!x||typeof x!=='object')return;
         if(!x.id||have[x.id]){x=JSON.parse(JSON.stringify(x));x.id=uid();}
+        have[x.id]=1;
         DB[k].push(x);
       });
     });
   }
-  keys.forEach(function(k){if(!Array.isArray(DB[k]))DB[k]=[];});
+  sanitizeDB();
   window.__imp=null;save();closeModal();render();
   alert('导入完成，当前共 '+total()+' 条数据。');
 }
