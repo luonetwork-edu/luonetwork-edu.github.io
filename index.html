@@ -287,6 +287,16 @@ ul{margin:0;padding:0;list-style:none}
 .modal-h h3{font-size:17px;flex:1;letter-spacing:-.02em}
 .modal-b{padding:18px 20px}
 .modal-f{padding:14px 20px 20px;border-top:1px solid var(--line-s);display:flex;gap:10px;justify-content:flex-end;background:#fff;position:sticky;bottom:0}
+/* 会议详情 */
+.mv-row{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--line-s);align-items:flex-start}
+.mv-row:last-child{border-bottom:none}
+.mv-lb{flex:0 0 74px;font-size:12.5px;color:var(--muted);font-weight:600;padding-top:2px}
+.mv-vl{flex:1;font-size:14px;line-height:1.65;word-break:break-word}
+.mv-vl .tag{margin:1px 6px 1px 0}
+/* 会议列表摘要（详情见查看弹窗） */
+.mv-summ{font-size:13px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;transition:color .15s}
+.mv-summ:hover{color:var(--teal)}
+.mv-summ .arr{color:var(--muted);margin-left:6px;font-size:11px}
 
 /* ---------- 移动端 ---------- */
 .mtop{display:none}
@@ -558,6 +568,8 @@ var ICON={
   table:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>',
   download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>',
   note:'<path d="M15 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M8 13h8M8 17h5"/>',
+  eye:'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+  lock:'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
   x:'<path d="M18 6 6 18M6 6l12 12"/>'
 };
 function ic(n,sz,sw){
@@ -958,9 +970,10 @@ function renderMeet(){
         '<span class="hint">主持：'+esc(m.host)+'</span>'+
         '<span class="hint">'+esc(m.place)+'</span>'+
         '<span style="flex:1"></span>'+
+        '<button class="btn sm" onclick="viewMeet(\''+m.id+'\')">'+ic('eye',13)+'查看</button>'+
         '<button class="btn sm dgr" onclick="delItem(\'meetings\',\''+m.id+'\')">'+ic('trash',13)+'</button>'+
       '</div>'+
-      '<div style="font-size:14px;color:var(--sub);line-height:1.65">'+nl(m.content)+'</div>'+
+      '<div class="mv-summ" onclick="viewMeet(\''+m.id+'\')" title="点击查看完整内容">'+esc(m.content).replace(/\n+/g,' ')+'<span class="arr">查看 ›</span></div>'+
       '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+(m.tags||[]).map(function(t){return '<span class="tag cl" onclick="setTag(\'meetTag\',\''+esc(t)+'\')">#'+esc(t)+'</span>';}).join('')+imaBadge(m)+'</div>'+
     '</div>';
   }).join(''):'<div class="empty">'+ic('meet',26,1.6)+'没有匹配的会议记录</div>';
@@ -1712,6 +1725,82 @@ function addMeet(){
   DB.meetings.push({id:uid(),date:$('mDate').value||today(),time:$('mTime').value||'',place:$('mPlace').value.trim(),
     dept:$('mDept').value.trim()||'—',host:$('mHost').value.trim()||'—',pri:$('mPri').value,content:c,tags:parseTags($('mTags').value)});
   save();render();
+}
+/* ---------- 会议查看 / 编辑（编辑需管理密码） ---------- */
+var MEET_PWD='ws012736';
+function viewMeet(id){
+  var m=DB.meetings.filter(function(x){return x.id===id;})[0];
+  if(!m)return;
+  var rows=[
+    ['日期',cnDate(m.date)+' '+weekName(m.date)],
+    ['时间',m.time||'—'],
+    ['地点',m.place||'—'],
+    ['主持部门',m.dept||'—'],
+    ['主持人',m.host||'—'],
+    ['优先级',m.pri||'—']
+  ];
+  var html='<div class="mv">'+
+    rows.map(function(r){return '<div class="mv-row"><span class="mv-lb">'+esc(r[0])+'</span><span class="mv-vl">'+esc(r[1])+'</span></div>';}).join('')+
+    '<div class="mv-row"><span class="mv-lb">会议内容</span><span class="mv-vl">'+nl(m.content)+'</span></div>'+
+    '<div class="mv-row"><span class="mv-lb">标签</span><span class="mv-vl">'+((m.tags||[]).length?m.tags.map(function(t){return '<span class="tag">#'+esc(t)+'</span>';}).join(''):'—')+'</span></div>'+
+    '</div>';
+  modal('会议详情',html,[
+    {t:ic('edit',14)+' 编辑',c:'pri',f:'meetPwd(\''+m.id+'\')'},
+    {t:'关闭',c:'',f:'closeModal()'}
+  ]);
+}
+function meetPwd(id){
+  modal('修改会议记录', '<div class="f"><div><label>请输入管理密码</label><input id="mpPwd" type="password" placeholder="输入密码后进入编辑"></div></div>',[
+    {t:'确定',c:'pri',f:'meetPwdCheck(\''+id+'\')'},
+    {t:'取消',c:'',f:'closeModal()'}
+  ]);
+  setTimeout(function(){var el=$('mpPwd');if(el)el.focus();},0);
+}
+function meetPwdCheck(id){
+  var p=$('mpPwd').value;
+  if(p!==MEET_PWD){alert('密码错误，无法编辑该会议记录');return;}
+  editMeet(id);
+}
+function editMeet(id){
+  var m=DB.meetings.filter(function(x){return x.id===id;})[0];
+  if(!m){closeModal();return;}
+  var priOpts=['P0','P1','P2'].map(function(p){
+    return '<option value="'+p+'"'+(m.pri===p?' selected':'')+'>'+p+(p==='P0'?' 紧急重要':p==='P1'?' 重要':' 常规')+'</option>';
+  }).join('');
+  modal('编辑会议记录', '<div class="f">'+
+    '<div class="frow">'+
+      '<div><label>日期</label><input id="meDate" type="date" value="'+esc(m.date)+'"></div>'+
+      '<div><label>时间</label><input id="meTime" type="time" value="'+esc(m.time)+'"></div>'+
+      '<div><label>地点</label><input id="mePlace" value="'+esc(m.place||'')+'"></div>'+
+    '</div>'+
+    '<div class="frow">'+
+      '<div><label>主持部门</label><input id="meDept" value="'+esc(m.dept==='—'?'':m.dept)+'"></div>'+
+      '<div><label>主持人</label><input id="meHost" value="'+esc(m.host==='—'?'':m.host)+'"></div>'+
+      '<div><label>优先级</label><select id="mePri">'+priOpts+'</select></div>'+
+    '</div>'+
+    '<div><label>会议内容 / 结论</label><textarea id="meCont" rows="4">'+esc(m.content)+'</textarea></div>'+
+    '<div><label>标签（逗号或空格分隔）</label><input id="meTags" value="'+esc((m.tags||[]).join(', '))+'"></div>'+
+  '</div>',[
+    {t:ic('ok',14)+' 保存修改',c:'pri',f:'saveMeetEdit(\''+m.id+'\')'},
+    {t:'取消',c:'',f:'closeModal()'}
+  ]);
+  setTimeout(function(){var el=$('meCont');if(el)el.focus();},0);
+}
+function saveMeetEdit(id){
+  var m=DB.meetings.filter(function(x){return x.id===id;})[0];
+  if(!m){closeModal();return;}
+  var c=$('meCont').value.trim();
+  if(!c){alert('会议内容不能为空');$('meCont').focus();return;}
+  m.date=$('meDate').value||m.date;
+  m.time=$('meTime').value;
+  m.place=$('mePlace').value.trim();
+  m.dept=$('meDept').value.trim()||'—';
+  m.host=$('meHost').value.trim()||'—';
+  m.pri=$('mePri').value;
+  m.content=c;
+  m.tags=parseTags($('meTags').value);
+  m.updatedAt=today();
+  save();render();closeModal();
 }
 function addIdea(){
   var t=$('iTxt').value.trim();
