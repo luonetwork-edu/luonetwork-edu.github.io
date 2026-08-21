@@ -612,7 +612,7 @@ function sanitizeDB(){
   DB.meetings.forEach(function(x){ if(!x||typeof x!=='object')return; if(!x.title)x.title=''; if(!x.pri)x.pri='P2'; if(!x.date)x.date=''; if(!x.time)x.time=''; if(!x.place)x.place=''; if(!x.dept)x.dept=''; if(!x.host)x.host=''; if(x.content===undefined)x.content=''; if(!Array.isArray(x.tags))x.tags=[]; });
   DB.projects.forEach(function(x){ if(!x||typeof x!=='object')return; if(!x.name)x.name='未命名项目'; if(!x.status)x.status='normal'; if(!x.type)x.type='通用'; if(x.dept===undefined)x.dept=''; if(x.stage===undefined)x.stage=''; if(x.next===undefined)x.next=''; if(x.blocker===undefined)x.blocker=''; });
   DB.ideas.forEach(function(x){ if(!x||typeof x!=='object')return; if(x.text===undefined)x.text=''; if(x.createdAt===undefined)x.createdAt=''; if(!Array.isArray(x.tags))x.tags=[]; });
-  DB.sched.forEach(function(x){ if(!x||typeof x!=='object')return; if(!x.title)x.title=''; if(x.day===undefined)x.day=1; if(!x.type)x.type='其他'; if(x.type==='课')x.type='课程'; if(x.per===undefined)x.per=''; if(x.place===undefined)x.place=''; if(x.cls===undefined)x.cls=''; if(x.repeat===undefined)x.repeat=false; if(x.genCount===undefined)x.genCount=0; });
+  DB.sched.forEach(function(x){ if(!x||typeof x!=='object')return; if(!x.title)x.title=''; if(x.day===undefined)x.day=1; if(!x.type)x.type='其他'; if(x.type==='课')x.type='课程'; if(x.type!=='课程'&&x.type!=='值班')x.type='值班'; if(x.per===undefined)x.per=''; if(x.place===undefined)x.place=''; if(x.cls===undefined)x.cls=''; if(x.repeat===undefined)x.repeat=false; if(x.genCount===undefined)x.genCount=0; if(x.type!=='课程')x.repeat=false; });
   DB.classes.forEach(function(x){ if(!x||typeof x!=='object')return; if(!x.name)x.name='未命名班级'; if(x.room===undefined)x.room=''; });
   DB.students.forEach(function(x){ if(!x||typeof x!=='object')return; if(!x.name)x.name=''; if(!x.cid)x.cid=''; if(x.no===undefined)x.no=''; if(x.sex===undefined)x.sex=''; if(x.phone===undefined)x.phone=''; if(!x.status)x.status='在读'; if(x.note===undefined)x.note=''; });
   DB.attend.forEach(function(x){ if(!x||typeof x!=='object')return; if(x.cid===undefined)x.cid=''; if(x.sid===undefined)x.sid=''; if(!x.date)x.date=''; if(!x.status)x.status='出勤'; if(x.reason===undefined)x.reason=''; });
@@ -1258,13 +1258,13 @@ var PROJDEPTFILTER='';
 var PROJTYPES=['通用','技能大赛','实训项目','1+X培训','校企合作','校本教材','行政专项'];
 var PROJDEPTS=['教务科','学团科','实训科','综合科','文职院','民职校'];
 var WK=['周一','周二','周三','周四','周五','周六','周日'];
-var SCHTYPES=['课程','坐班','值班','教研','会议','其他'];
+var SCHTYPES=['课程','值班'];
 var STUSTATUS=['在读','实习','休学','退学'];
 var ATTEND=['出勤','迟到','缺勤','病假','事假'];
 var TALKTYPE=['谈话','家访','家长联系','处分'];
 var ASSETST=['正常','维修','报废','借出'];
 var REPTFREQ=['一次性','周','月','季','学期'];
-var TYPEPILL={课程:'pt',坐班:'pb',值班:'p1',教研:'pt',会议:'pb',其他:'p2'};
+var TYPEPILL={课程:'pt',值班:'p1'};
 function typePill(t){return TYPEPILL[t]||'p2';}
 function classById(id){for(var i=0;i<DB.classes.length;i++){if(DB.classes[i].id===id)return DB.classes[i];}return null;}
 function studentById(id){for(var i=0;i<DB.students.length;i++){if(DB.students[i].id===id)return DB.students[i];}return null;}
@@ -1275,10 +1275,21 @@ function reportDue(){var t=today();return DB.reports.filter(function(r){return r
 
 /* ---------- 课表与值班 ---------- */
 function weekdayOf(d){var w=d.getDay();return w===0?7:w;}
-function toggleSchedRepeat(){
+var SCHLABELS={
+  课程:{per:'节次 / 时段',title:'内容 / 课程名',cls:'班级 / 备注',perPh:'如：第 3 节 / 上午',titlePh:'如：计算机网络 实训课',clsPh:'如：22 级网络 1 班'},
+  值班:{per:'值班 / 时段',title:'夜班 / 人员名单',cls:'值班 / 情况记录',perPh:'如：夜班 22:00-次日6:00',titlePh:'如：张老师、李老师',clsPh:'如：巡查两次，无异常'}
+};
+function onSchedTypeChange(){
   var t=$('sType')?$('sType').value:'';
   var w=$('sRepeatRow');
   if(w)w.style.display=(t==='课程')?'':'none';
+  var L=SCHLABELS[t]||SCHLABELS['课程'];
+  if($('sPerLabel'))$('sPerLabel').textContent=L.per;
+  if($('sTitleLabel'))$('sTitleLabel').textContent=L.title;
+  if($('sClsLabel'))$('sClsLabel').textContent=L.cls;
+  if($('sPer'))$('sPer').placeholder=L.perPh;
+  if($('sTitle'))$('sTitle').placeholder=L.titlePh;
+  if($('sCls'))$('sCls').placeholder=L.clsPh;
 }
 function genSchedTodos(item){
   DB.todos=DB.todos.filter(function(x){return x.schedId!==item.id;});
@@ -1333,13 +1344,13 @@ function renderSched(){
   var form='<div class="card pad"><div class="f">'+
     '<div class="frow">'+
       '<div><label>星期</label><select id="sDay">'+WK.map(function(w,i){return '<option value="'+(i+1)+'"'+(i+1===t?' selected':'')+'>'+w+'</option>';}).join('')+'</select></div>'+
-      '<div><label>节次 / 时段</label><input id="sPer" placeholder="如：第 3 节 / 上午"></div>'+
-      '<div><label>类型</label><select id="sType" onchange="toggleSchedRepeat()">'+SCHTYPES.map(function(x){return '<option'+(x==='课程'?' selected':'')+'>'+x+'</option>';}).join('')+'</select></div>'+
+      '<div><label id="sPerLabel">节次 / 时段</label><input id="sPer" placeholder="如：第 3 节 / 上午"></div>'+
+      '<div><label>类型</label><select id="sType" onchange="onSchedTypeChange()">'+SCHTYPES.map(function(x){return '<option'+(x==='课程'?' selected':'')+'>'+x+'</option>';}).join('')+'</select></div>'+
     '</div>'+
     '<div class="frow">'+
-      '<div><label>内容 / 课程名</label><input id="sTitle" placeholder="如：计算机网络 实训课"></div>'+
+      '<div><label id="sTitleLabel">内容 / 课程名</label><input id="sTitle" placeholder="如：计算机网络 实训课"></div>'+
       '<div><label>地点</label><input id="sPlace" placeholder="如：机房 302"></div>'+
-      '<div><label>班级 / 备注</label><input id="sCls" placeholder="如：22 级网络 1 班"></div>'+
+      '<div><label id="sClsLabel">班级 / 备注</label><input id="sCls" placeholder="如：22 级网络 1 班"></div>'+
     '</div>'+
     '<div id="sRepeatRow" style="display:flex;align-items:center;gap:8px">'+
       '<input id="sRepeat" type="checkbox" style="width:16px;height:16px;margin:0">'+
@@ -1654,16 +1665,135 @@ function addRep(){
 function markRep(id){DB.reports.forEach(function(r){if(r.id===id)r.status='已报';});save();render();}
 
 /* ---------- 数据管理视图（内嵌到底部） ---------- */
+/* ---------- 分模块导出（Excel 优先，离线自动降级 CSV） ---------- */
+var MODEXPORT={
+  todo:{label:'待办事项',build:function(){
+    var rows=DB.todos.map(function(x){
+      var p=x.pid?projById(x.pid):null;
+      return [x.title||'',{P0:'P0 紧急重要',P1:'P1 重要',P2:'P2 常规'}[x.pri]||x.pri||'',x.start||'',x.due||'',
+        x.done?'已完成':'未完成',x.done&&x.doneAt?x.doneAt:'',x.roll||0,p?p.name:'',x.note||''];
+    });
+    return [{name:'待办事项',head:['任务内容','优先级','开始日期','截止日期','状态','完成时间','顺延次数','关联项目','备注'],rows:rows}];
+  }},
+  sched:{label:'课表与值班',build:function(){
+    var rows=DB.sched.map(function(s){
+      return [WK[s.day-1]||'',s.type||'',s.per||'',s.title||'',s.place||'',s.cls||'',s.repeat?'是':'否',s.genCount||0];
+    });
+    return [{name:'课表与值班',head:['星期','类型','时段','内容/人员','地点','备注/记录','每周重复','已生成待办数'],rows:rows}];
+  }},
+  class:{label:'班级与学生',build:function(){
+    var clsRows=DB.classes.map(function(c){
+      var n=DB.students.filter(function(x){return x.cid===c.id;}).length;
+      return [c.name||'',c.room||'',c.note||'',n];
+    });
+    var stuRows=DB.students.map(function(s){
+      var c=classById(s.cid),t=stuTotal(s);
+      return [c?c.name:'',s.no||'',s.name||'',s.sex||'',s.phone||'',s.status||'',s.note||'',nv(s.att),nv(s.usual),nv(s.final),t===null?'':t];
+    });
+    var attRows=DB.attend.map(function(a){
+      var c=classById(a.cid),st=studentById(a.sid);
+      return [c?c.name:'',st?st.name:'',a.date||'',a.status||'',a.reason||''];
+    });
+    var talkRows=DB.talks.map(function(k){
+      var c=classById(k.cid),st=studentById(k.sid);
+      return [c?c.name:'',st?st.name:'',k.date||'',k.type||'',k.content||'',k.result||''];
+    });
+    return [
+      {name:'班级',head:['班级名称','教室/地点','备注','学生人数'],rows:clsRows},
+      {name:'学生名单',head:['班级','学号','姓名','性别','电话','状态','备注','考勤(10%)','平时成绩(40%)','期末成绩(50%)','总评'],rows:stuRows},
+      {name:'考勤记录',head:['班级','学生','日期','状态','原因/说明'],rows:attRows},
+      {name:'谈话家访',head:['班级','学生','日期','类型','内容','结果'],rows:talkRows}
+    ];
+  }},
+  meet:{label:'会议记录',build:function(){
+    var rows=DB.meetings.map(function(m){
+      return [m.date||'',m.time||'',m.place||'',m.dept||'',m.host||'',(m.tags||[]).join('/'),m.content||'',m.pri||''];
+    });
+    return [{name:'会议记录',head:['日期','时间','地点','部门','主持/主讲','标签','内容','优先级'],rows:rows}];
+  }},
+  ledger:{label:'行政台账',build:function(){
+    var assetRows=DB.assets.map(function(a){
+      return [a.name||'',a.cat||'',a.model||'',a.qty||1,a.loc||'',a.code||'',a.owner||'',a.status||'',a.note||''];
+    });
+    var repRows=DB.reports.map(function(r){
+      return [r.title||'',r.dept||'',r.due||'',r.freq||'',r.status||'',r.note||''];
+    });
+    return [
+      {name:'固定资产台账',head:['名称','类别','型号','数量','存放位置','编号','责任人','状态','备注'],rows:assetRows},
+      {name:'材料报送',head:['事项','部门','截止日期','频率','状态','备注'],rows:repRows}
+    ];
+  }},
+  idea:{label:'灵感速记',build:function(){
+    var rows=DB.ideas.map(function(x){return [x.text||'',(x.tags||[]).join('/'),x.createdAt||''];});
+    return [{name:'灵感速记',head:['内容','标签','记录时间'],rows:rows}];
+  }},
+  proj:{label:'项目跟进',build:function(){
+    var rows=DB.projects.map(function(p){
+      return [p.name||'',p.type||'',p.dept||'',{normal:'正常推进',blocked:'卡住了',done:'已完结'}[p.status]||p.status||'',p.stage||'',p.next||'',p.blocker||''];
+    });
+    return [{name:'项目跟进',head:['项目名称','类型','责任部门','状态','现在到哪一步','下一步','卡点'],rows:rows}];
+  }}
+};
+function loadXLSXLib(cb){
+  if(window.XLSX){cb(true);return;}
+  var done=false;
+  var s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  s.onload=function(){if(done)return;done=true;cb(!!window.XLSX);};
+  s.onerror=function(){if(done)return;done=true;cb(false);};
+  document.head.appendChild(s);
+  setTimeout(function(){if(done)return;done=true;cb(!!window.XLSX);},4500);
+}
+function exportModule(key){
+  var mod=MODEXPORT[key];if(!mod)return;
+  var sheets=mod.build().filter(function(sh){return sh.rows.length;});
+  if(!sheets.length){alert('「'+mod.label+'」目前还没有数据可以导出。');return;}
+  loadXLSXLib(function(ok){
+    if(ok)exportModuleXLSX(mod.label,sheets);
+    else exportModuleCSV(mod.label,sheets);
+  });
+}
+function exportModuleXLSX(label,sheets){
+  try{
+    var wb=XLSX.utils.book_new();
+    sheets.forEach(function(sh){
+      var aoa=[sh.head].concat(sh.rows);
+      var ws=XLSX.utils.aoa_to_sheet(aoa);
+      XLSX.utils.book_append_sheet(wb,ws,sh.name.slice(0,31));
+    });
+    XLSX.writeFile(wb,label+'_'+today().replace(/-/g,'')+'.xlsx');
+  }catch(e){
+    exportModuleCSV(label,sheets);
+  }
+}
+function exportModuleCSV(label,sheets){
+  sheets.forEach(function(sh,i){
+    var lines=[sh.head.map(csvCell).join(',')].concat(sh.rows.map(function(r){return r.map(csvCell).join(',');}));
+    var csv=lines.join('\r\n');
+    var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download=label+(sheets.length>1?'_'+sh.name:'')+'_'+today().replace(/-/g,'')+'.csv';
+    document.body.appendChild(a);
+    setTimeout(function(){
+      a.click();
+      setTimeout(function(){try{document.body.removeChild(a);}catch(e){}URL.revokeObjectURL(a.href);},150);
+    },i*160);
+  });
+  if(!window.XLSX)setTimeout(function(){alert('当前无法连接 Excel 组件（可能离线），已改为导出 CSV 格式'+(sheets.length>1?'（每个表格一个文件）':'')+'。');},sheets.length*160+50);
+}
+
 function renderFooterTools(){
   var n=total(), s=DB.todos.filter(function(x){return x.sample;}).length+DB.meetings.filter(function(x){return x.sample;}).length+DB.ideas.filter(function(x){return x.sample;}).length+DB.projects.filter(function(x){return x.sample;}).length;
+  var modBtns=[['todo','待办事项'],['sched','课表与值班'],['class','班级与学生'],['meet','会议记录'],['ledger','行政台账'],['idea','灵感速记'],['proj','项目跟进']]
+    .map(function(m){return '<button class="btn" onclick="exportModule(\''+m[0]+'\')">'+ic('download',13)+'导出'+m[1]+'</button>';}).join('');
   return '<div class="sec"><div class="card pad">'+
     '<div style="display:flex;gap:9px;flex-wrap:wrap;align-items:baseline"><b style="font-size:14px">数据管理</b>'+
     '<div class="hint">当前共 '+n+' 条，全部保存在这台设备的浏览器里'+(DB.lastExport?'，上次导出 '+DB.lastExport:'，还没导出过')+'</div></div>'+
-    '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:12px">'+
-      '<button class="btn pri" onclick="doExport()">导出备份</button>'+
-      '<button class="btn" onclick="pickImport()">导入恢复</button>'+
+    '<div class="hint" style="margin-top:6px">按模块导出台账数据，方便日常整理查看：有网络时优先导出 Excel（.xlsx），离线时自动改为导出 CSV。</div>'+
+    '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:10px">'+modBtns+'</div>'+
+    '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:16px;padding-top:12px;border-top:1px solid #eee">'+
       (s?'<button class="btn" onclick="clearSample()">清空示例（'+s+' 条）</button>':'')+
-      '<button class="btn dgr" onclick="clearAll()">清空全部数据</button>'+
+      '<button class="btn dgr" onclick="clearAll()">'+ic('lock',13)+'清空全部数据</button>'+
     '</div>'+
   '</div></div>';
 }
@@ -1808,6 +1938,7 @@ function addMeet(){
 }
 /* ---------- 会议查看 / 编辑（编辑需管理密码） ---------- */
 var MEET_PWD='ws012736';
+var ADMIN_PWD=MEET_PWD; /* 管理密码：编辑会议记录、清空全部数据共用 */
 function viewMeet(id){
   var m=DB.meetings.filter(function(x){return x.id===id;})[0];
   if(!m)return;
@@ -2035,8 +2166,15 @@ function clearAll(){
 }
 function confirmClearAll(){
   closeModal();
-  modal('再确认一次','<div>真的要清空全部数据吗？这是最后一次确认。</div>',
-    [{t:'算了',c:'pri',f:'closeModal()'},{t:'确认清空',c:'dgr',f:'doClearAll()'}]);
+  modal('再确认一次','<div style="color:#b91c1c;font-weight:600">真的要清空全部数据吗？这是最后一次确认，清空后无法恢复。</div>'+
+    '<div class="f" style="margin-top:10px"><div><label>请输入管理密码</label><input id="clrPwd" type="password" placeholder="输入密码后才能清空"></div></div>',
+    [{t:'算了',c:'pri',f:'closeModal()'},{t:'确认清空',c:'dgr',f:'checkClearAllPwd()'}]);
+  setTimeout(function(){var el=$('clrPwd');if(el)el.focus();},0);
+}
+function checkClearAllPwd(){
+  var p=$('clrPwd')?$('clrPwd').value:'';
+  if(p!==ADMIN_PWD){alert('密码不对，未执行清空。');return;}
+  doClearAll();
 }
 function doClearAll(){
   DB={ver:1,lastRoll:today(),lastExport:DB.lastExport||'',noticeAt:0,todos:[],meetings:[],ideas:[],projects:[],
