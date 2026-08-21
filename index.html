@@ -587,7 +587,8 @@ function seed(){
   return {
     ver:1, lastRoll:'', lastExport:'', noticeAt:0,
     projects:[], todos:[], meetings:[], ideas:[],
-    sched:[], classes:[], students:[], attend:[], talks:[], assets:[], reports:[]
+    sched:[], classes:[], students:[], attend:[], talks:[], assets:[], reports:[],
+    semester:{start:'',end:''}
   };
 }
 function load(){
@@ -604,11 +605,14 @@ function load(){
 function sanitizeDB(){
   if(!DB||typeof DB!=='object'){DB=seed();return;}
   ['projects','todos','meetings','ideas','sched','classes','students','attend','talks','assets','reports'].forEach(function(k){if(!Array.isArray(DB[k]))DB[k]=[];});
-  DB.todos.forEach(function(x){ if(!x||typeof x!=='object')return; if(!x.title)x.title=''; if(!x.pri)x.pri='P2'; if(x.roll===undefined)x.roll=0; if(x.done===undefined)x.done=0; if(x.due===undefined)x.due=''; if(x.start===undefined)x.start=''; if(x.note===undefined)x.note=''; });
+  if(!DB.semester||typeof DB.semester!=='object')DB.semester={start:'',end:''};
+  if(DB.semester.start===undefined)DB.semester.start='';
+  if(DB.semester.end===undefined)DB.semester.end='';
+  DB.todos.forEach(function(x){ if(!x||typeof x!=='object')return; if(!x.title)x.title=''; if(!x.pri)x.pri='P2'; if(x.roll===undefined)x.roll=0; if(x.done===undefined)x.done=0; if(x.due===undefined)x.due=''; if(x.start===undefined)x.start=''; if(x.note===undefined)x.note=''; if(x.schedId===undefined)x.schedId=''; });
   DB.meetings.forEach(function(x){ if(!x||typeof x!=='object')return; if(!x.title)x.title=''; if(!x.pri)x.pri='P2'; if(!x.date)x.date=''; if(!x.time)x.time=''; if(!x.place)x.place=''; if(!x.dept)x.dept=''; if(!x.host)x.host=''; if(x.content===undefined)x.content=''; if(!Array.isArray(x.tags))x.tags=[]; });
   DB.projects.forEach(function(x){ if(!x||typeof x!=='object')return; if(!x.name)x.name='未命名项目'; if(!x.status)x.status='normal'; if(!x.type)x.type='通用'; if(x.dept===undefined)x.dept=''; if(x.stage===undefined)x.stage=''; if(x.next===undefined)x.next=''; if(x.blocker===undefined)x.blocker=''; });
   DB.ideas.forEach(function(x){ if(!x||typeof x!=='object')return; if(x.text===undefined)x.text=''; if(x.createdAt===undefined)x.createdAt=''; if(!Array.isArray(x.tags))x.tags=[]; });
-  DB.sched.forEach(function(x){ if(!x||typeof x!=='object')return; if(!x.title)x.title=''; if(x.day===undefined)x.day=1; if(!x.type)x.type='其他'; if(x.per===undefined)x.per=''; if(x.place===undefined)x.place=''; if(x.cls===undefined)x.cls=''; });
+  DB.sched.forEach(function(x){ if(!x||typeof x!=='object')return; if(!x.title)x.title=''; if(x.day===undefined)x.day=1; if(!x.type)x.type='其他'; if(x.type==='课')x.type='课程'; if(x.per===undefined)x.per=''; if(x.place===undefined)x.place=''; if(x.cls===undefined)x.cls=''; if(x.repeat===undefined)x.repeat=false; if(x.genCount===undefined)x.genCount=0; });
   DB.classes.forEach(function(x){ if(!x||typeof x!=='object')return; if(!x.name)x.name='未命名班级'; if(x.room===undefined)x.room=''; });
   DB.students.forEach(function(x){ if(!x||typeof x!=='object')return; if(!x.name)x.name=''; if(!x.cid)x.cid=''; if(x.no===undefined)x.no=''; if(x.sex===undefined)x.sex=''; if(x.phone===undefined)x.phone=''; if(!x.status)x.status='在读'; if(x.note===undefined)x.note=''; });
   DB.attend.forEach(function(x){ if(!x||typeof x!=='object')return; if(x.cid===undefined)x.cid=''; if(x.sid===undefined)x.sid=''; if(!x.date)x.date=''; if(!x.status)x.status='出勤'; if(x.reason===undefined)x.reason=''; });
@@ -1254,13 +1258,13 @@ var PROJDEPTFILTER='';
 var PROJTYPES=['通用','技能大赛','实训项目','1+X培训','校企合作','校本教材','行政专项'];
 var PROJDEPTS=['教务科','学团科','实训科','综合科','文职院','民职校'];
 var WK=['周一','周二','周三','周四','周五','周六','周日'];
-var SCHTYPES=['课','坐班','值班','教研','会议','其他'];
+var SCHTYPES=['课程','坐班','值班','教研','会议','其他'];
 var STUSTATUS=['在读','实习','休学','退学'];
 var ATTEND=['出勤','迟到','缺勤','病假','事假'];
 var TALKTYPE=['谈话','家访','家长联系','处分'];
 var ASSETST=['正常','维修','报废','借出'];
 var REPTFREQ=['一次性','周','月','季','学期'];
-var TYPEPILL={课:'pt',坐班:'pb',值班:'p1',教研:'pt',会议:'pb',其他:'p2'};
+var TYPEPILL={课程:'pt',坐班:'pb',值班:'p1',教研:'pt',会议:'pb',其他:'p2'};
 function typePill(t){return TYPEPILL[t]||'p2';}
 function classById(id){for(var i=0;i<DB.classes.length;i++){if(DB.classes[i].id===id)return DB.classes[i];}return null;}
 function studentById(id){for(var i=0;i<DB.students.length;i++){if(DB.students[i].id===id)return DB.students[i];}return null;}
@@ -1270,18 +1274,76 @@ function schedTomorrow(){var d=new Date();d.setDate(d.getDate()+1);var w=d.getDa
 function reportDue(){var t=today();return DB.reports.filter(function(r){return r.status!=='已报'&&r.due&&r.due<=t;});}
 
 /* ---------- 课表与值班 ---------- */
+function weekdayOf(d){var w=d.getDay();return w===0?7:w;}
+function toggleSchedRepeat(){
+  var t=$('sType')?$('sType').value:'';
+  var w=$('sRepeatRow');
+  if(w)w.style.display=(t==='课程')?'':'none';
+}
+function genSchedTodos(item){
+  DB.todos=DB.todos.filter(function(x){return x.schedId!==item.id;});
+  var s=DB.semester.start,e=DB.semester.end;
+  if(!s||!e||s>e){item.genCount=0;return 0;}
+  var d=toDate(s), target=item.day;
+  while(weekdayOf(d)!==target){d.setDate(d.getDate()+1);}
+  var cnt=0;
+  while(ymd(d)<=e){
+    DB.todos.push({id:uid(),title:item.title+(item.cls?'（'+item.cls+'）':''),pri:'P2',start:'',due:ymd(d),done:0,pid:'',roll:0,
+      createdAt:today(),note:'来自课表自动生成'+(item.per?' · '+item.per:'')+(item.place?' · '+item.place:''),schedId:item.id});
+    cnt++;
+    d.setDate(d.getDate()+7);
+  }
+  item.genCount=cnt;
+  return cnt;
+}
+function setSemester(){
+  var s=$('semStart').value,e=$('semEnd').value;
+  if(s&&e&&s>e){alert('开学日期不能晚于学期结束日期');return;}
+  DB.semester.start=s;DB.semester.end=e;
+  DB.sched.forEach(function(x){if(x.repeat)genSchedTodos(x);});
+  save();render();
+}
+function regenSchedTodos(id){
+  var item=DB.sched.filter(function(x){return x.id===id;})[0];
+  if(!item)return;
+  if(!DB.semester.start||!DB.semester.end){alert('请先在上方设置学期起止时间');return;}
+  item.repeat=true;
+  var n=genSchedTodos(item);
+  save();render();
+  alert('已按每周重复生成 '+n+' 条待办到「待办事项」中');
+}
+function stopSchedRepeat(id){
+  var item=DB.sched.filter(function(x){return x.id===id;})[0];
+  if(!item)return;
+  item.repeat=false;item.genCount=0;
+  DB.todos=DB.todos.filter(function(x){return x.schedId!==id;});
+  save();render();
+}
 function renderSched(){
   var t=new Date().getDay();t=t===0?7:t;
+  var sem=DB.semester||{start:'',end:''};
+  var semForm='<div class="card pad"><div class="f">'+
+    '<div class="frow">'+
+      '<div><label>学期开始日期</label><input id="semStart" type="date" value="'+esc(sem.start)+'"></div>'+
+      '<div><label>学期结束日期</label><input id="semEnd" type="date" value="'+esc(sem.end)+'"></div>'+
+      '<div style="justify-content:flex-end;display:flex"><button class="btn pri" onclick="setSemester()" style="height:42px;align-self:flex-end">'+ic('ok',15)+'保存学期时间</button></div>'+
+    '</div>'+
+    '<div class="hint">'+(sem.start&&sem.end?'当前学期：'+cnDate(sem.start)+' — '+cnDate(sem.end)+'。':'还没设置学期起止时间。')+' 这个范围用来确定「课程」每周重复要生成到哪天，也是课程、值班安排生效的时间区间。</div>'+
+  '</div></div>';
   var form='<div class="card pad"><div class="f">'+
     '<div class="frow">'+
       '<div><label>星期</label><select id="sDay">'+WK.map(function(w,i){return '<option value="'+(i+1)+'"'+(i+1===t?' selected':'')+'>'+w+'</option>';}).join('')+'</select></div>'+
       '<div><label>节次 / 时段</label><input id="sPer" placeholder="如：第 3 节 / 上午"></div>'+
-      '<div><label>类型</label><select id="sType">'+SCHTYPES.map(function(x){return '<option'+(x==='课'?' selected':'')+'>'+x+'</option>';}).join('')+'</select></div>'+
+      '<div><label>类型</label><select id="sType" onchange="toggleSchedRepeat()">'+SCHTYPES.map(function(x){return '<option'+(x==='课程'?' selected':'')+'>'+x+'</option>';}).join('')+'</select></div>'+
     '</div>'+
     '<div class="frow">'+
       '<div><label>内容 / 课程名</label><input id="sTitle" placeholder="如：计算机网络 实训课"></div>'+
       '<div><label>地点</label><input id="sPlace" placeholder="如：机房 302"></div>'+
       '<div><label>班级 / 备注</label><input id="sCls" placeholder="如：22 级网络 1 班"></div>'+
+    '</div>'+
+    '<div id="sRepeatRow" style="display:flex;align-items:center;gap:8px">'+
+      '<input id="sRepeat" type="checkbox" style="width:16px;height:16px;margin:0">'+
+      '<label style="margin:0;font-weight:600;font-size:12.5px;color:var(--sub)" for="sRepeat">每周重复（课程每周固定，按学期起止时间自动生成到待办事项）</label>'+
     '</div>'+
     '<div><button class="btn pri" onclick="addSched()">'+ic('plus',15)+'添加到课表</button></div>'+
   '</div></div>';
@@ -1293,20 +1355,38 @@ function renderSched(){
           (s.per?'<div class="m">'+esc(s.per)+'</div>':'')+
           (s.place?'<div class="m">'+ic('clock',10)+' '+esc(s.place)+'</div>':'')+
           (s.cls?'<div class="m">'+esc(s.cls)+'</div>':'')+
-          '<div style="margin-top:5px;display:flex;gap:4px"><button class="btn sm dgr" onclick="delItem(\'sched\',\''+s.id+'\')">'+ic('trash',12)+'</button></div>'+
+          (s.repeat?'<div class="m">'+ic('next',10)+' 每周重复 · 已生成 '+(s.genCount||0)+' 条待办</div>':'')+
+          '<div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">'+
+            (s.repeat
+              ?'<button class="btn sm" onclick="regenSchedTodos(\''+s.id+'\')" title="按最新学期时间重新生成">'+ic('ok',12)+'重新生成</button>'+
+               '<button class="btn sm" onclick="stopSchedRepeat(\''+s.id+'\')" title="取消每周重复并删除已生成待办">'+ic('x',12)+'</button>'
+              :(s.type==='课程'?'<button class="btn sm" onclick="regenSchedTodos(\''+s.id+'\')" title="开启每周重复">'+ic('next',12)+'每周重复</button>':''))+
+            '<button class="btn sm dgr" onclick="delItem(\'sched\',\''+s.id+'\')">'+ic('trash',12)+'</button>'+
+          '</div>'+
         '</div>';
       }).join(''):'<div class="hint" style="font-size:11px;color:#aab4c0">—</div>')+
     '</div>';
   }).join('')+'</div>';
   return '<div class="sec"><div class="sec-h">'+ic('sched',19,1.9)+'<h2>课表与值班</h2><span class="cnt">'+DB.sched.length+' 项</span></div>'+
-    form+'<div class="sec">'+grid+'</div>'+
-    '<div class="hint" style="margin-top:8px">今天和明天的课 / 值班会自动出现在顶部「今天要处理的」里；周视图一目了然，方便调课、代课对照。</div></div>';
+    semForm+form+'<div class="sec">'+grid+'</div>'+
+    '<div class="hint" style="margin-top:8px">今天和明天的课 / 值班会自动出现在顶部「今天要处理的」里；周视图一目了然，方便调课、代课对照。类型为「课程」时可勾选「每周重复」，会按学期起止时间自动把每周的课生成到「待办事项」里。</div></div>';
 }
 function addSched(){
   var title=$('sTitle').value.trim();
   if(!title){alert('先填内容 / 课程名');$('sTitle').focus();return;}
-  DB.sched.push({id:uid(),day:+$('sDay').value,per:$('sPer').value.trim(),type:$('sType').value,
-    title:title,place:$('sPlace').value.trim(),cls:$('sCls').value.trim()});
+  var type=$('sType').value;
+  var repeatChecked=(type==='课程')&&$('sRepeat')&&$('sRepeat').checked;
+  var item={id:uid(),day:+$('sDay').value,per:$('sPer').value.trim(),type:type,
+    title:title,place:$('sPlace').value.trim(),cls:$('sCls').value.trim(),repeat:!!repeatChecked,genCount:0};
+  DB.sched.push(item);
+  if(repeatChecked){
+    if(!DB.semester.start||!DB.semester.end){
+      alert('已添加到课表。还没设置学期起止时间，暂时不会生成待办，请先在上方保存学期时间，再点该课程的「重新生成」。');
+    }else{
+      var n=genSchedTodos(item);
+      if(!n)alert('已添加到课表，但当前学期时间范围内没有匹配到日期，请检查学期起止时间。');
+    }
+  }
   save();render();
 }
 
@@ -1849,6 +1929,10 @@ function delItem(coll,id){
     var ns=DB.students.filter(function(x){return x.cid===id;}).length;
     if(ns)extra='<div class="hint" style="margin-top:8px;color:#b91c1c">该班级下有 '+ns+' 名学生，连同其考勤、谈话家校记录将一并清空且不可恢复。</div>';
   }
+  if(coll==='sched'){
+    var nt=DB.todos.filter(function(x){return x.schedId===id;}).length;
+    if(nt)extra='<div class="hint" style="margin-top:8px;color:#b91c1c">该课程每周重复已生成 '+nt+' 条待办，删除后这些待办也会一并删除。</div>';
+  }
   modal('确认删除','<div>确定删除'+name+'吗？删了就找不回来了。</div>'+extra,
     [{t:'取消',c:'',f:'closeModal()'},{t:'确认删除',c:'dgr',f:'doDel(\''+coll+'\',\''+id+'\')'}]);
 }
@@ -1863,6 +1947,9 @@ function doDel(coll,id){
   if(coll==='students'){
     DB.attend=DB.attend.filter(function(x){return x.sid!==id;});
     DB.talks=DB.talks.filter(function(x){return x.sid!==id;});
+  }
+  if(coll==='sched'){
+    DB.todos=DB.todos.filter(function(x){return x.schedId!==id;});
   }
   save();closeModal();render();
 }
@@ -1912,7 +1999,9 @@ function doImport(overwrite){
   if(overwrite){
     keys.forEach(function(k){DB[k]=Array.isArray(d[k])?d[k]:[];});
     DB.lastRoll=d.lastRoll||'';DB.lastExport=d.lastExport||'';
+    DB.semester=(d.semester&&typeof d.semester==='object')?d.semester:{start:'',end:''};
   }else{
+    if((!DB.semester.start&&!DB.semester.end)&&d.semester&&typeof d.semester==='object'){DB.semester=d.semester;}
     keys.forEach(function(k){
       var have={};DB[k].forEach(function(x){if(x&&x.id)have[x.id]=1;});
       (d[k]||[]).forEach(function(x){
@@ -1951,7 +2040,7 @@ function confirmClearAll(){
 }
 function doClearAll(){
   DB={ver:1,lastRoll:today(),lastExport:DB.lastExport||'',noticeAt:0,todos:[],meetings:[],ideas:[],projects:[],
-    sched:[],classes:[],students:[],attend:[],talks:[],assets:[],reports:[]};
+    sched:[],classes:[],students:[],attend:[],talks:[],assets:[],reports:[],semester:{start:'',end:''}};
   SELCLASS='';
   save();closeModal();render();
 }
