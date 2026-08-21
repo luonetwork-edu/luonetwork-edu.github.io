@@ -161,6 +161,9 @@ ul{margin:0;padding:0;list-style:none}
 .g2{grid-template-columns:repeat(2,1fr)}
 .g3{grid-template-columns:repeat(3,1fr)}
 .g4{grid-template-columns:repeat(4,1fr)}
+.dm-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:10px}
+.dm-grid .btn{width:100%}
+@media(max-width:860px){ .dm-grid{grid-template-columns:repeat(2,1fr)} }
 
 /* ---------- 按钮 ---------- */
 .btn{
@@ -1784,17 +1787,17 @@ function exportModuleCSV(label,sheets){
 
 function renderFooterTools(){
   var n=total(), s=DB.todos.filter(function(x){return x.sample;}).length+DB.meetings.filter(function(x){return x.sample;}).length+DB.ideas.filter(function(x){return x.sample;}).length+DB.projects.filter(function(x){return x.sample;}).length;
-  var modBtns=[['todo','待办事项'],['sched','课表与值班'],['class','班级与学生'],['meet','会议记录'],['ledger','行政台账'],['idea','灵感速记'],['proj','项目跟进']]
-    .map(function(m){return '<button class="btn" onclick="exportModule(\''+m[0]+'\')">'+ic('download',13)+'导出'+m[1]+'</button>';}).join('');
+  var mods=[['todo','待办事项'],['sched','课表与值班'],['class','班级与学生'],['meet','会议记录'],['ledger','行政台账'],['idea','灵感速记'],['proj','项目跟进']];
+  var allBtns=mods.map(function(m){
+      return '<button class="btn" onclick="exportModule(\''+m[0]+'\')">'+ic('download',13)+'导出'+m[1]+'</button>';
+    }).join('')+
+    '<button class="btn dgr" onclick="clearAll()">'+ic('lock',13)+'清空全部数据</button>';
   return '<div class="sec"><div class="card pad">'+
     '<div style="display:flex;gap:9px;flex-wrap:wrap;align-items:baseline"><b style="font-size:14px">数据管理</b>'+
     '<div class="hint">当前共 '+n+' 条，全部保存在这台设备的浏览器里'+(DB.lastExport?'，上次导出 '+DB.lastExport:'，还没导出过')+'</div></div>'+
     '<div class="hint" style="margin-top:6px">按模块导出台账数据，方便日常整理查看：有网络时优先导出 Excel（.xlsx），离线时自动改为导出 CSV。</div>'+
-    '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:10px">'+modBtns+'</div>'+
-    '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:16px;padding-top:12px;border-top:1px solid #eee">'+
-      (s?'<button class="btn" onclick="clearSample()">清空示例（'+s+' 条）</button>':'')+
-      '<button class="btn dgr" onclick="clearAll()">'+ic('lock',13)+'清空全部数据</button>'+
-    '</div>'+
+    '<div class="dm-grid">'+allBtns+'</div>'+
+    (s?'<div style="margin-top:12px;padding-top:12px;border-top:1px solid #eee"><button class="btn sm" onclick="clearSample()">清空示例（'+s+' 条）</button></div>':'')+
   '</div></div>';
 }
 
