@@ -1375,6 +1375,7 @@ function renderSched(){
               ?'<button class="btn sm" onclick="regenSchedTodos(\''+s.id+'\')" title="按最新学期时间重新生成">'+ic('ok',12)+'重新生成</button>'+
                '<button class="btn sm" onclick="stopSchedRepeat(\''+s.id+'\')" title="取消每周重复并删除已生成待办">'+ic('x',12)+'</button>'
               :(s.type==='课程'?'<button class="btn sm" onclick="regenSchedTodos(\''+s.id+'\')" title="开启每周重复">'+ic('next',12)+'每周重复</button>':''))+
+            '<button class="btn sm" onclick="editSched(\''+s.id+'\')" title="编辑这条课表">'+ic('edit',12)+'</button>'+
             '<button class="btn sm dgr" onclick="delItem(\'sched\',\''+s.id+'\')">'+ic('trash',12)+'</button>'+
           '</div>'+
         '</div>';
@@ -1403,6 +1404,55 @@ function addSched(){
   }
   save();render();
 }
+/* 课表：编辑（补「改」能力，与项目/待办/会议的增删改对齐） */
+function editSched(id){
+  var s=DB.sched.filter(function(x){return x.id===id;})[0];
+  if(!s)return;
+  var t=(s.type==='值班'?'值班':'课程');
+  modal('编辑课表项',
+    '<div class="f">'+
+    '<div class="frow">'+
+      '<div><label>星期</label><select id="seDay">'+WK.map(function(w,i){return '<option value="'+(i+1)+'"'+(i+1===s.day?' selected':'')+'>'+w+'</option>';}).join('')+'</select></div>'+
+      '<div><label>节次 / 时段</label><input id="sePer" value="'+esc(s.per||'')+'" placeholder="如：第 3 节 / 上午"></div>'+
+      '<div><label>类型</label><select id="seType">'+SCHTYPES.map(function(x){return '<option'+(x===t?' selected':'')+'>'+x+'</option>';}).join('')+'</select></div>'+
+    '</div>'+
+    '<div class="frow">'+
+      '<div><label>内容 / 课程名</label><input id="seTitle" value="'+esc(s.title)+'"></div>'+
+      '<div><label>地点</label><input id="sePlace" value="'+esc(s.place||'')+'"></div>'+
+      '<div><label>班级 / 备注</label><input id="seCls" value="'+esc(s.cls||'')+'"></div>'+
+    '</div>'+
+    '<div style="display:flex;align-items:center;gap:8px">'+
+      '<input id="seRepeat" type="checkbox" style="width:16px;height:16px;margin:0"'+(s.repeat?' checked':'')+'><label style="margin:0;font-size:12.5px;color:var(--sub)">每周重复（仅课程，按学期起止时间生成待办）</label>'+
+    '</div>'+
+    '<div class="hint">勾选「每周重复」保存后会按最新学期时间重新生成待办；取消勾选会删除已生成的待办。</div>'+
+    '</div>',
+    [{t:'取消',c:'',f:'closeModal()'},{t:'保存修改',c:'pri',f:'saveSched(\''+id+'\')'}]);
+  setTimeout(function(){var el=$('seTitle');if(el)el.focus();},0);
+}
+function saveSched(id){
+  var s=DB.sched.filter(function(x){return x.id===id;})[0];
+  if(!s)return;
+  var title=$('seTitle').value.trim();
+  if(!title){alert('先填内容 / 课程名');$('seTitle').focus();return;}
+  var type=$('seType').value;
+  s.day=+$('seDay').value;s.per=$('sePer').value.trim();s.type=type;
+  s.title=title;s.place=$('sePlace').value.trim();s.cls=$('seCls').value.trim();
+  var rep=(type==='课程')&&$('seRepeat')&&$('seRepeat').checked;
+  s.repeat=!!rep;
+  if(rep){
+    if(!DB.semester.start||!DB.semester.end){
+      s.genCount=0;DB.todos=DB.todos.filter(function(x){return x.schedId!==id;});
+      alert('已保存。还没设置学期起止时间，未生成待办，可到课表里点「重新生成」。');
+    }else{
+      var n=genSchedTodos(s);
+      if(!n)alert('已保存，但当前学期范围内没有匹配到该星期的日期，请检查学期起止时间。');
+    }
+  }else{
+    s.genCount=0;
+    DB.todos=DB.todos.filter(function(x){return x.schedId!==id;});
+  }
+  save();closeModal();render();
+}
 
 /* ---------- 班级与学生 ---------- */
 function renderClass(){
@@ -1410,11 +1460,15 @@ function renderClass(){
   var list=DB.classes.length?DB.classes.map(function(c){
     var n=DB.students.filter(function(x){return x.cid===c.id;}).length;
     var a=DB.attend.filter(function(x){return x.cid===c.id;}).length;
-    return '<div class="card pad" style="display:flex;align-items:center;gap:12px;cursor:pointer" onclick="openClass(\''+c.id+'\')">'+
+    return '<div class="card pad" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;cursor:pointer" onclick="openClass(\''+c.id+'\')">'+
       '<div class="logo" style="width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,#0d9488,#0284c7);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;flex:0 0 40px;font-size:14px">'+esc(c.name.slice(0,2))+'</div>'+
       '<div style="flex:1;min-width:0"><b style="font-size:15px">'+esc(c.name)+'</b>'+
         '<div class="hint" style="margin-top:2px">'+(c.room?esc(c.room)+' · ':'')+n+' 名学生 · '+a+' 条考勤</div></div>'+
-      '<span class="btn sm">查看 '+ic('next',13)+'</span>'+
+      '<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">'+
+        '<button class="btn sm" onclick="event.stopPropagation();editClass(\''+c.id+'\')" title="编辑班级信息">'+ic('edit',13)+'</button>'+
+        '<button class="btn sm dgr" onclick="event.stopPropagation();delItem(\'classes\',\''+c.id+'\')" title="删除班级">'+ic('trash',13)+'</button>'+
+        '<span class="btn sm">查看 '+ic('next',13)+'</span>'+
+      '</div>'+
     '</div>';
   }).join(''):'<div class="card empty">'+ic('class',26,1.6)+'还没有班级，先把带的班加进来</div>';
   var form='<div class="card pad"><div class="f">'+
@@ -1433,6 +1487,25 @@ function addClass(){
   if(!n){alert('班级名称不能为空');$('cName').focus();return;}
   DB.classes.push({id:uid(),name:n,room:$('cRoom').value.trim(),note:$('cNote').value.trim()});
   save();render();
+}
+/* 班级：编辑（补「改」能力，与项目/待办的增删改对齐） */
+function editClass(id){
+  var c=classById(id);if(!c)return;
+  modal('编辑班级',
+    '<div class="f">'+
+    '<div><label>班级名称</label><input id="ceName" value="'+esc(c.name)+'"></div>'+
+    '<div><label>教室 / 地点</label><input id="ceRoom" value="'+esc(c.room||'')+'"></div>'+
+    '<div><label>备注</label><input id="ceNote" value="'+esc(c.note||'')+'"></div>'+
+    '</div>',
+    [{t:'取消',c:'',f:'closeModal()'},{t:'保存修改',c:'pri',f:'saveClass(\''+id+'\')'}]);
+  setTimeout(function(){var el=$('ceName');if(el)el.focus();},0);
+}
+function saveClass(id){
+  var c=classById(id);if(!c)return;
+  var n=$('ceName').value.trim();
+  if(!n){alert('班级名称不能为空');$('ceName').focus();return;}
+  c.name=n;c.room=$('ceRoom').value.trim();c.note=$('ceNote').value.trim();
+  save();closeModal();render();
 }
 function renderClassDetail(cid){
   var c=classById(cid);
@@ -1489,7 +1562,10 @@ function renderClassDetail(cid){
         (k.result?'<div class="hint" style="margin-top:2px">结果：'+esc(k.result)+'</div>':'')+'</div>'+
         '<button class="btn sm dgr" onclick="delItem(\'talks\',\''+k.id+'\')">'+ic('trash',12)+'</button></div>';
     }).join(''):'<div class="empty">还没有谈话 / 家校联系记录</div>';})();
-  return '<div class="sec"><div class="sec-h"><button class="btn sm" onclick="backClass()">'+ic('next',13)+'返回</button><h2 style="margin-left:6px">'+esc(c.name)+'</h2><span class="cnt">'+(c.room||'')+'</span></div>'+
+  return '<div class="sec"><div class="sec-h"><button class="btn sm" onclick="backClass()">'+ic('next',13)+'返回</button><h2 style="margin-left:6px">'+esc(c.name)+'</h2><span class="cnt">'+(c.room||'')+'</span>'+
+    '<span class="sp"></span>'+
+    '<button class="btn sm" onclick="editClass(\''+cid+'\')" title="编辑班级信息">'+ic('edit',13)+'编辑</button>'+
+    '<button class="btn sm dgr" onclick="delItem(\'classes\',\''+cid+'\')" title="删除该班级（连同学生与考勤、谈话记录）">'+ic('trash',13)+'删除</button></div>'+
     '<div class="sec"><div class="sec-h">'+ic('class',17)+'<h2 style="font-size:15.5px">学生名单</h2><span class="sp"></span>'+
       '<button class="btn sm" onclick="pickStuFile()">'+ic('table',14)+'导入表格</button>'+
       '<button class="btn sm" onclick="exportStuCSV(\''+cid+'\')">'+ic('download',14)+'导出表格</button>'+
@@ -1645,7 +1721,9 @@ function renderLedger(){
       (r.dept?' <span class="pill pb">'+esc(r.dept)+'</span>':'')+(r.freq!=='一次性'?' <span class="pill pt">'+esc(r.freq)+'</span>':'')+
       '<div class="mt"><span class="'+(od?'overdue':'')+'">'+(r.due?cnDate(r.due)+weekName(r.due):'未设日期')+'</span>'+
       (od?' <span class="overdue">'+ic('warn',11)+' 已逾期</span>':soon?' <span class="pill p1">临近截止</span>':'')+(r.note?' <span class="hint">'+esc(r.note)+'</span>':'')+'</div></div>'+
-      (r.status==='已报'?'<span class="pill pg">已报</span>':'<button class="btn sm pri" onclick="markRep(\''+r.id+'\')">标记已报</button>')+
+      (r.status==='已报'
+        ?'<span class="pill pg">已报</span><button class="btn sm" onclick="markRep(\''+r.id+'\')" title="撤销，改回待报状态">取消已报</button>'
+        :'<button class="btn sm pri" onclick="markRep(\''+r.id+'\')">标记已报</button>')+
       '<button class="btn sm dgr" onclick="delItem(\'reports\',\''+r.id+'\')">'+ic('trash',12)+'</button></div>';
   }).join(''):'<div class="empty">'+ic('ledger',26,1.6)+'还没有材料报送跟踪</div>';
   return '<div class="sec"><div class="sec-h">'+ic('ledger',19,1.9)+'<h2>行政台账</h2><span class="cnt">资产 '+DB.assets.length+' · 报送 '+DB.reports.length+'</span></div>'+
@@ -1665,7 +1743,7 @@ function addRep(){
   DB.reports.push({id:uid(),title:n,dept:$('rDept').value.trim(),due:$('rDue').value||today(),freq:$('rFreq').value,status:'待报',note:$('rNote').value.trim()});
   save();render();
 }
-function markRep(id){DB.reports.forEach(function(r){if(r.id===id)r.status='已报';});save();render();}
+function markRep(id){DB.reports.forEach(function(r){if(r.id===id)r.status=(r.status==='已报'?'待报':'已报');});save();render();}
 
 /* ---------- 数据管理视图（内嵌到底部） ---------- */
 /* ---------- 分模块导出（Excel 优先，离线自动降级 CSV） ---------- */
